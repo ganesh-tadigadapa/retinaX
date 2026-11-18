@@ -1,245 +1,158 @@
-# SIH26038 — Explainable AI for Diabetic Retinopathy Screening
+# RetinaX — Explainable AI for Diabetic Retinopathy Screening
 
-Upload a fundus photograph → ICDR grade 0–4, referable yes/no, Grad-CAM heatmap, lesion
-evidence checked against the ICDR clinical rules, calibrated confidence, and a one-page
-PDF an ophthalmologist signs off in under 30 seconds. A blurry image is **refused** with a
-specific instruction for retaking it.
+Upload a photo of the back of the eye (a fundus image) and RetinaX returns a **diabetic
+retinopathy severity grade (ICDR 0–4)**, a **refer / don't-refer** decision, a
+**Grad-CAM heatmap** showing *why*, and a one-page PDF report a doctor can review in
+under 30 seconds. Blurry or unusable photos are **rejected** with a clear instruction
+for retaking them.
 
-> **Screening triage aid. Not a diagnostic device.**
+Built for **Smart India Hackathon (SIH26038)**.
 
-## New here, or not a coder? Read `GUIDE/` first
+> **Screening triage aid — not a diagnostic device.**
 
-`GUIDE/00_START_HERE.md` explains this whole project in plain English with no jargon —
-what it does, what each folder holds, what every number means, how to run it, and what to
-say to judges. Every code folder also has a plain-English `README.md` inside it.
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-FF6F00?logo=tensorflow&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 
-## Status
+---
 
-The pipeline is built and verified end to end. It runs today with no cloud account and no
-datasets — on a model trained on **synthetic images**, which is branded as such from the
-model file through the API into a warning bar in the UI. The plumbing is done; the science
-is waiting on data.
+## Why it matters
 
-**Read `docs/BLOCKERS.md` first** — four things need your accounts, and one is a 5-second
-folder rename that unblocks the entire frontend.
+Diabetic retinopathy is a leading cause of preventable blindness, and India has far
+too few eye specialists to screen everyone with diabetes. RetinaX lets a health
+worker take a photo, get an instant triage result, and send only the patients who
+need it to a doctor — with an explanation the doctor can check, in the patient's own
+language.
 
-## Run it
+## Features
 
-```bash
-make setup                 # venv + npm install
-make synth                 # generate test images
-cp .env.example .env       # API settings; the defaults are fine for local work
-make api                   # http://localhost:8080
-make web                   # http://localhost:3000   (see BLOCKERS.md #1 first)
-make test                  # backend + translation-integrity tests
-make web-test              # frontend tests (CareBridge)
-make smoke                 # end-to-end: expects 401; add TOKEN=... for the 200/422 part
+| | Feature | What it does |
+|---|---|---|
+| 🔍 | **Image quality gate** | Checks sharpness, lighting and field of view; rejects bad photos with a specific retake instruction (HTTP 422) |
+| 🧠 | **Severity grading** | CNN with an ordinal (CORAL) head predicts ICDR grade 0–4 and `P(grade ≥ 2)` for referral |
+| 🔥 | **Explainability** | Grad-CAM heatmaps + a rule engine that cross-checks the prediction against ICDR clinical rules |
+| 🩺 | **Segmentation** | Optic disc, fovea, blood vessels (Frangi filter) and lesion counts by quadrant |
+| 📄 | **Doctor report** | Calibrated confidence and a one-page PDF; uncertain cases are flagged for doctor review |
+| 🌐 | **CareBridge** | Results in **English, हिन्दी, తెలుగు, ਪੰਜਾਬੀ** with voice playback and a Simple ⇄ Clinical view |
+| 🪪 | **Eye Health Passport** | Tracks screenings over time, compares with the last visit, and suggests a follow-up date |
+| 💬 | **WhatsApp reports** | Sends the PDF report to the patient's WhatsApp number |
+| 📍 | **Smart Care Finder** | Finds nearby eye-care facilities on a map (Google Places API) with directions |
+
+## How it works
+
+```
+Fundus photo
+   │
+   ▼
+Quality gate ──✗──► "Retake: image too blurry" (no grade given)
+   │ ✓
+   ▼
+Enhancement → Segmentation (disc, fovea, vessels, lesions)
+   │
+   ▼
+CNN + CORAL ordinal head ──► ICDR grade 0–4 + referral probability
+   │
+   ▼
+Grad-CAM + ICDR rule cross-check + confidence calibration
+   │
+   ▼
+PDF report → Doctor review queue → WhatsApp → Follow-up reminder
 ```
 
-> **Do not run `npm run build` while `make web` is running.** `next build` and `next dev`
-> share `web/.next`; running both mixes production and dev artifacts and the site then
-> fails with `Cannot find module './NNN.js'`. Use `make web-build`, which refuses to run
-> while a dev server is live. To recover: `pkill -f 'next dev' && rm -rf web/.next && make web`.
+## Tech stack
 
-The app has **no login step**. Open <http://localhost:3000/login>, type any mobile
-number, and you are in — there is no code to enter, no password and no SMS provider.
-
-The number is still asked for because it is the record key: it owns your screening
-history and your Eye Health Passport, and it is the number your WhatsApp report goes to.
-What it no longer does is prove anything.
-
-To try the doctor side:
-
-```bash
-make doctors                              # list doctor accounts + verification state
-make approve-doctor MOBILE=+919876543210  # approve one
-```
-
-Signing in is free; becoming a **doctor** is not — that still needs an administrator.
-
-## Signing in
-
-Identity is a **mobile number, taken as claimed**. There are no passwords and no
-one-time codes anywhere in the system. Nothing verifies that the person typing a number
-owns it, so the per-account boundaries below separate *claimed* identities rather than
-verified ones — see `docs/AUTH.md` §1.
-
-| Account type | Can do |
+| Layer | Tools |
 |---|---|
-| **User** | screen images, see their own results and the review queue |
-| **Doctor**, unverified | the same; the reports area says "Doctor verification pending." |
-| **Doctor**, verified | the above, plus `/reports`: every screening report, anonymised |
-| **Admin** | approve doctor accounts (`ADMIN_MOBILES` in the environment) |
+| **ML / Computer Vision** | Python, TensorFlow, OpenCV, scikit-image, scikit-learn, NumPy |
+| **Backend** | FastAPI, Pydantic, ReportLab (PDF) |
+| **Frontend** | Next.js, React, TypeScript, Leaflet (maps) |
+| **Integrations** | Google Places API, WhatsApp |
+| **DevOps** | Docker, GitHub Actions (CI), Makefile, pytest |
+| **Simulation** | MATLAB / Simulink (doctor workload with vs. without AI triage) |
 
-Choosing "Doctor Account" at signup **grants nothing**. It creates an account with
-`doctor_verified = false` and files a verification request; only an admin endpoint or the
-local `scripts/approve_doctor.py` can flip that flag. The role is read from the server's
-account store on every request, never from the token or the request body.
+## Key design decisions
 
-The doctor report view is anonymised by construction: it is built field by field from a
-whitelist, so no patient name, mobile number or free-text `patient_ref` can reach it.
+- **Ordinal head, not softmax.** Grades are ordered (0 < 1 < … < 4), so the referral
+  decision `P(grade ≥ 2)` comes straight out of the model with its own threshold.
+- **Contrast-normalised sharpness, not Laplacian variance.** The textbook blur measure
+  mistakes a healthy, smooth retina for a blurry one and would reject healthy eyes.
+- **"Unknown", never "absent".** The rule engine reports *unknown* for signs it can't
+  detect (venous beading, IRMA, neovascularisation), so the sickest patients are never
+  under-graded.
+- **Model runs in-process.** Grad-CAM needs gradients that a hosted prediction endpoint
+  won't return — and it's cheaper.
+- **Careful wording.** Comparing two visits says *"the result is one grade higher than
+  last time"*, never *"your disease got worse"* — a test checks every grade pair.
+- **No fake numbers.** The dashboard reads real metrics from `/v1/metrics`; if a run
+  hasn't happened, it shows "not run yet".
 
-Full architecture, the production guards, and an honest limitations list:
-**`docs/AUTH.md`**. Configuration: **`.env.example`**.
+## Project status
 
-## CareBridge — the result, in the patient's language
+The full pipeline — quality gate → grading → explanation → report → web app — is built
+and tested end to end. The current model is trained on **synthetic images** so it runs
+without any dataset or cloud account, and this is clearly labelled in the API and UI.
+The next step is training and evaluating on real fundus datasets (e.g. APTOS / EyePACS);
+results will be published in `docs/BENCHMARKS.md`.
 
-A screening service whose result only exists in English is not usable by most of the
-people it was built for. CareBridge is the accessibility layer over the whole patient
-journey: **English, हिन्दी, తెలుగు, ਪੰਜਾਬੀ**, chosen once and remembered, with voice
-playback and a Simple ⇄ Clinical switch over the same result.
-
-It is a presentation layer and nothing else. No grade, probability, threshold, referral
-decision, Grad-CAM or lesion count is computed or changed by it, and the model is never
-called a second time — `web/components/carebridge/CareResult.tsx` re-orders and translates
-the `AnalyzeResult` the API already returned, rendering the existing clinical components
-unchanged inside its clinical section.
-
-Three things it refuses to do:
-
-- **Guess.** An image the quality gate refused gets the translated recapture flow — no
-  grade, no follow-up interval, no nutrition guidance.
-- **Pretend.** A device with no Telugu voice keeps the Telugu text and says why it cannot
-  speak it, rather than reading Telugu aloud in an English voice.
-- **Drift.** A missing key fails `tsc`; a blank one, a dropped `{placeholder}` or a
-  "translation" that is the English text copied across fails `make test`.
-
-Open <http://localhost:3000/carebridge> — no sign-in required. Details in
-`docs/CAREBRIDGE.md`.
-
-## 🪪 CareBridge Eye Health Passport — what changed since last time
-
-Diabetic retinopathy is a disease of **change over time**. One screening answers "what
-does this photograph show?" It cannot answer the question that actually decides whether
-someone keeps their sight: *what has changed since last time, and when should this person
-come back?*
-
-The Eye Health Passport is that second question, and it is a loop rather than a feature:
-
-```
-SCREEN → SAVE → FOLLOW-UP PLAN → REMINDER → RETURN → NEW SCREENING
-      → COMPARE → COMPARISON REPORT → WHATSAPP → UPDATED FOLLOW-UP PLAN → ⟲
-```
-
-A returning patient is told their previous screening is available *before* they upload.
-The new result is compared with the last one that was actually graded, a step timeline
-grows by one point, the follow-up window is recalculated from the current result, and a
-comparison PDF goes to the WhatsApp number they already proved is theirs.
-
-What it refuses to do is the interesting part:
-
-- **Diagnose.** Grade 1 then grade 2 is a fact about two screening RESULTS, not proof the
-  disease progressed — different day, different camera, different pupil, and a model with
-  its own error rate. So the system says *"the current screening result is one ICDR
-  category higher than the previous screening"* and never *"your disease has worsened"*.
-  A test runs all 25 pairs of grades and asserts the forbidden vocabulary appears in none
-  of them.
-- **Interpolate.** ICDR grade is an ordinal CATEGORY, so the timeline is a **step** that
-  holds each grade until the next screening changes it. Nothing averages grades or fits a
-  trend through them.
-- **Compare a refusal.** A photograph the quality gate rejected is on the timeline — the
-  visit happened — but it is never half of a comparison, and the visit after it is
-  compared with the last result that was actually graded.
-- **Prescribe.** Follow-up windows come from a configured table keyed by ICDR grade, not
-  from one universal interval, and a clinician's recommendation overrides the table
-  outright. The wording is "suggested follow-up", never "you must return".
-- **Touch the model.** Nothing in `src/passport/` loads a weight, reads a pixel or
-  evaluates a threshold.
-
-A verified doctor can read the anonymised report collection already. Reading one patient's
-history *over time* needs more than a role — it needs a care relationship, created by
-recording a clinician review on one of that patient's screenings, or by an administrator.
-
-Open <http://localhost:3000/passport>. Details in `docs/PASSPORT.md`.
-
-## 📍 Smart Care Finder — from screening to the next step of care
-
-A result that tells someone their eyes need looking at, and then leaves them to work out
-where, has done half a job. Smart Care Finder is the other half, and it is **one
-CareBridge feature**, not four: it takes the patient's location (only after they press
-the button), finds real eye-care facilities near it on the **Google Places API (New)**,
-draws them on an interactive map beside a synchronised list, shows what Google actually
-knows about each one — distance, rating, open/closed, phone, website — and hands over
-directions that open in Google Maps on desktop, Android and iPhone.
-
-It is an **access** layer. It reads two things off the result the page already has — the
-grade, and the existing clinician-review signal — and both choose a sentence and how
-prominent the section is. It cannot change a grade, a referral, an overlay or a report,
-and `src/carefinder/` imports none of the medical pipeline.
-
-Three things it refuses to do:
-
-- **Invent.** A field Google did not return is rendered as missing — never as "Unknown",
-  never as a placeholder, and never as another facility's value.
-- **Recommend.** The ranking is about access (relevance, distance, open now, reviews,
-  listing completeness), every weight is declared in `src/carefinder/ranking.py`, and the
-  words "best", "recommended" and "highest quality" appear nowhere in any language.
-- **Leak.** Google receives a coordinate, a radius, a fixed eye-care phrase and a
-  language code. No name, no mobile number, no scan id, no grade, no report — asserted
-  field by field in `tests/test_care_finder.py`.
-
-Optional: with no key configured it says so in the patient's language and everything else
-on the page is unaffected.
+## Run it locally
 
 ```bash
-# .env
-GOOGLE_MAPS_API_KEY=AIza...             # server-side; Places API (New) + billing enabled
-
-make care-finder-check                  # configuration only, no API call
-make care-finder-check AREA=Vijayawada  # ONE real Places call, end to end
+make setup             # create venv + npm install
+make synth             # generate test images
+cp .env.example .env   # defaults are fine for local use
+make api               # backend  → http://localhost:8080
+make web               # frontend → http://localhost:3000
+make test              # backend tests
+make web-test          # frontend tests
 ```
 
-Setup, the field mask and its billing tiers, the ranking weights, the privacy rules and
-why the map is Leaflet rather than a second Google key: `docs/CARE_FINDER.md`.
+Sign in at <http://localhost:3000/login> with any mobile number (there is no OTP in the
+demo). To try the doctor view:
 
-## The five graded requirements
-
-| # | Requirement | Where | Evidence it produces |
-|---|---|---|---|
-| 1 | Image quality + enhancement | `src/quality/` | 3 checks (thresholds fitted on SYNTHETIC data — refit needed); HTTP 422 + a recapture instruction naming the failed criterion |
-| 2 | Structure segmentation | `src/segment/` | optic disc, fovea, Frangi vessels (Dice vs DRIVE — *not yet measured*), lesion counts by quadrant |
-| 3 | DR severity grading | `src/grading/` | CORAL ordinal head; QWK + referable sens/spec with bootstrap CIs (*code ready; no real run yet*) |
-| 4 | Explainability | `src/explain/` | Grad-CAM measured against lesion masks, ICDR rule cross-check, temperature scaling, PDF |
-| 5 | Simulink workflow | `matlab/` | ophthalmologist FTEs with and without AI triage |
-
-## The decisions worth defending
-
-- **Ordinal (CORAL) head, not softmax.** The grades are ordered, so `P(grade ≥ 2)` — the
-  referral decision — is a direct model output with its own tunable threshold.
-- **Contrast-normalised sharpness, not Laplacian variance.** The textbook measure
-  confuses a healthy smooth retina with a blurred one and would have quietly rejected
-  healthy eyes. Pinned by a test.
-- **The rule engine returns *unknown*, not *absent*,** for venous beading, IRMA and
-  neovascularisation, which it cannot detect. Treating those as absent would under-grade
-  the sickest patients.
-- **The model runs in-process, not behind a hosted prediction endpoint.** Grad-CAM needs
-  gradients an endpoint will not return. Cheaper too.
-- **Vessel suppression only fires on elongated structures.** Frangi at small scales treats
-  a microaneurysm as a ridge; suppressing on the raw mask deleted the lesions we count.
-- **No number can be faked.** The dashboard reads `/v1/metrics`; no results file means the
-  UI prints "not run yet". There is no placeholder to accidentally ship.
-
-## Layout
-
-```
-src/quality/   quality gate + enhancement        src/api/      FastAPI backend
-src/segment/   disc, fovea, vessels, lesions     web/          Next.js frontend
-src/grading/   CORAL model, trainer, evaluation  matlab/       Simulink + classical baseline
-src/explain/   Grad-CAM, calibration, ICDR rules, PDF
-web/lib/i18n/  CareBridge translation layer        web/components/carebridge/  its UI
-results/       every run's config + metrics      docs/         contract, blockers, clock, cost
+```bash
+make doctors                               # list doctor accounts
+make approve-doctor MOBILE=+919876543210   # approve one
 ```
 
-## Documents
+Optional — Smart Care Finder needs a Google Maps key in `.env`
+(`GOOGLE_MAPS_API_KEY=...`). Without it, the rest of the app works normally.
 
-| File | What it is |
+> Don't run `npm run build` while `make web` is running — use `make web-build` instead.
+
+## Project structure
+
+```
+src/quality/    image quality gate + enhancement
+src/segment/    optic disc, fovea, vessels, lesions
+src/grading/    CORAL model, training, evaluation
+src/explain/    Grad-CAM, calibration, ICDR rules, PDF report
+src/passport/   screening history + follow-up plans
+src/carefinder/ nearby eye-care search
+src/api/        FastAPI backend
+web/            Next.js frontend (incl. CareBridge translations)
+matlab/         Simulink workflow + classical baseline
+tests/          backend tests
+docs/           detailed design docs
+GUIDE/          plain-English walkthrough of the whole project
+```
+
+## Documentation
+
+| File | About |
 |---|---|
-| `docs/BLOCKERS.md` | **what I need from you**, ordered by leverage |
-| `EXPLAIN_IT_BLOCK1.md` | plain-English brief for defending this to a judge |
-| `docs/API_CONTRACT.md` | the frozen v1 contract both tracks build against |
-| `docs/CLOCK.md` | the 36-hour plan and what is already done |
-| `docs/JUSTIFICATION.md` | why Kaggle GPU for the CNN and where MATLAB stays |
-| `docs/BENCHMARKS.md` | the result tables — empty cells say "not run yet" |
-| `docs/COST_LOG.md` | cloud spend. Currently $0.00 — this build is free-tier only |
-| `docs/CAREBRIDGE.md` | the multilingual + voice + patient-explanation layer |
-| `docs/PASSPORT.md` | longitudinal tracking: compare, follow up, remind, repeat |
+| `GUIDE/00_START_HERE.md` | Plain-English explanation of the whole project — start here |
+| `docs/API_CONTRACT.md` | API endpoints and response format |
+| `docs/AUTH.md` | Accounts, roles (user / doctor / admin) and their limits |
+| `docs/CAREBRIDGE.md` | Multilingual + voice layer |
+| `docs/PASSPORT.md` | Tracking screenings over time |
+| `docs/CARE_FINDER.md` | Nearby care search, ranking and privacy rules |
+| `docs/WHATSAPP.md` | WhatsApp report delivery |
+| `docs/BENCHMARKS.md` | Model results (filled in as real runs complete) |
+
+---
+
+**Disclaimer:** RetinaX is a screening and triage aid built for a hackathon. It does not
+replace an eye examination by a qualified ophthalmologist.
