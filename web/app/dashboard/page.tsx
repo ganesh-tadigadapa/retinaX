@@ -8,22 +8,25 @@
 import { useEffect, useState } from "react";
 import Guard from "@/components/Guard";
 import Shell from "@/components/Shell";
+import PageHeader from "@/components/PageHeader";
 import { getMetrics, getOperational } from "@/lib/api";
 
 function Stat({ label, value, sub, void_: isVoid }: {
   label: string; value: React.ReactNode; sub?: string; void_?: boolean;
 }) {
   return (
-    <div className="card" style={isVoid ? { opacity: 0.55 } : undefined}>
+    <div className="card stat-card" style={isVoid ? { opacity: 0.55 } : undefined}>
       <div className="eyebrow">{label}</div>
-      <div style={{
-        fontSize: "1.6rem", fontWeight: 600, marginTop: 6,
-        textDecoration: isVoid ? "line-through" : undefined,
-      }}>{value}</div>
-      {sub && <div className="muted" style={{ fontSize: ".78rem" }}>{sub}</div>}
+      <div className="stat-value" style={isVoid ? { textDecoration: "line-through" } : undefined}>
+        {value}
+      </div>
+      {sub && <div className="stat-sub">{sub}</div>}
     </div>
   );
 }
+
+/** 0.7681 -> "76.8%", matching how the headline numbers are shown. */
+const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 export default function Dashboard() {
   const [m, setM] = useState<any>(null);
@@ -39,9 +42,11 @@ export default function Dashboard() {
   return (
     <Guard>
     <Shell>
-      <h2 style={{ fontFamily: "var(--f-display)", fontWeight: 500, marginTop: 0 }}>
-        Dataset evaluation
-      </h2>
+      <PageHeader eyebrow="Clinical" title="Evidence">
+        How the model performs on data it was never tuned on, and what this deployment
+        has actually served.
+      </PageHeader>
+      <h2 className="section-title">Dataset evaluation</h2>
       {m?.available && m.synthetic_demo_model && (
         <div className="err" style={{ marginBottom: 14 }}>
           <strong>These numbers are meaningless.</strong> They come from a model trained on
@@ -72,30 +77,30 @@ export default function Dashboard() {
           file in <code>results/</code>.
         </div>
       )}
-      <div className="grid2">
+      <div className="stat-grid">
         <Stat void_={!!m?.synthetic_demo_model} label="Referable sensitivity"
               value={m?.referable?.sensitivity != null ? `${(m.referable.sensitivity * 100).toFixed(1)}%` : NA}
-              sub={m?.referable?.sensitivity_ci95 ? `95% CI ${m.referable.sensitivity_ci95.lo}–${m.referable.sensitivity_ci95.hi}` : "target >90%"} />
+              sub={m?.referable?.sensitivity_ci95 ? `95% CI ${pct(m.referable.sensitivity_ci95.lo)}–${pct(m.referable.sensitivity_ci95.hi)}` : "target >90%"} />
         <Stat void_={!!m?.synthetic_demo_model} label="Referable specificity"
               value={m?.referable?.specificity != null ? `${(m.referable.specificity * 100).toFixed(1)}%` : NA}
-              sub={m?.referable?.specificity_ci95 ? `95% CI ${m.referable.specificity_ci95.lo}–${m.referable.specificity_ci95.hi}` : "target >85%"} />
+              sub={m?.referable?.specificity_ci95 ? `95% CI ${pct(m.referable.specificity_ci95.lo)}–${pct(m.referable.specificity_ci95.hi)}` : "target >85%"} />
         <Stat void_={!!m?.synthetic_demo_model} label="Quadratic weighted kappa" value={m?.qwk ?? NA}
               sub={m?.split ? `on ${m.split} (n=${m.n})` : "published work sits ~0.90–0.92"} />
         <Stat void_={!!m?.synthetic_demo_model} label="Within one grade"
               value={m?.within_one_grade != null ? `${(m.within_one_grade * 100).toFixed(1)}%` : NA} />
       </div>
 
-      <h2 style={{ fontFamily: "var(--f-display)", fontWeight: 500, marginTop: 30 }}>
+      <h2 className="section-title">
         This deployment, measured
       </h2>
       <p className="muted" style={{ fontSize: ".84rem", marginTop: -6 }}>
         Computed from requests this service has actually served — demo traffic, not a
         dataset evaluation.
       </p>
-      <div className="grid2">
+      <div className="stat-grid">
         <Stat label="Scans served" value={op?.n_scans ?? "—"} />
         <Stat label="Median latency"
-              value={op?.median_latency_ms != null ? `${op.median_latency_ms} ms` : "—"} />
+              value={op?.median_latency_ms != null ? `${(op.median_latency_ms / 1000).toFixed(1)} s` : "—"} />
         <Stat label="Ungradeable rate"
               value={op?.ungradeable_rate != null ? `${(op.ungradeable_rate * 100).toFixed(0)}%` : "—"}
               sub="images the gate refused" />

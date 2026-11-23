@@ -215,6 +215,18 @@ def test_a_patient_cannot_send_another_patients_report(client, patient, twilio):
     assert twilio.calls == []
 
 
+def test_no_whatsapp_number_on_the_account_means_nothing_is_sent(client, patient, twilio):
+    """Sign-in is Google; the WhatsApp number is optional. Without one, the API says
+    so and dispatches nothing."""
+    h = auth_header(patient["token"])
+    assert client.put("/v1/auth/me/whatsapp", json={"mobile": None},
+                      headers=h).status_code == 200
+    r = send(client, patient)
+    assert r.status_code == 409
+    assert r.json()["code"] == "no_whatsapp_number"
+    assert twilio.calls == []
+
+
 def test_an_unknown_report_is_a_404_with_no_twilio_call(client, patient, twilio):
     r = client.post("/v1/reports/sc_doesnotexist/whatsapp", json={"language": "en"},
                     headers=auth_header(patient["token"]))

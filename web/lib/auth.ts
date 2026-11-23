@@ -1,4 +1,4 @@
-// Client-side session handling for the OTP flow.
+// Client-side session handling: Sign in with Google -> application session.
 //
 // The token is minted by the backend and carries an account id only — the role that
 // decides what a doctor may see is read from the server's account store on every
@@ -11,8 +11,12 @@ const TOKEN_KEY = "dr_session_token";
 
 export type Account = {
   account_id: string;
-  mobile: string;
-  mobile_masked: string;
+  email: string;
+  name: string;
+  picture: string;
+  /** Optional WhatsApp delivery number. Not a login credential. */
+  mobile: string | null;
+  mobile_masked: string | null;
   role: "user" | "doctor" | "admin";
   doctor_verified: boolean;
   status: string;
@@ -84,7 +88,9 @@ export async function authFetch(path: string, init: RequestInit = {}) {
   return netFetch(`${API_BASE}${path}`, { ...init, headers, cache: "no-store" });
 }
 
-async function errorOf(r: Response): Promise<{ code: string; message: string; retry_after?: number }> {
+async function errorOf(r: Response): Promise<{
+  code: string; message: string; retry_after?: number; attempts_remaining?: number;
+}> {
   const body = await r.json().catch(() => null);
   const e = body?.detail?.error || body?.error;
   if (e?.message) return e;
@@ -96,18 +102,19 @@ async function errorOf(r: Response): Promise<{ code: string; message: string; re
 
 // ------------------------------------------------------------------ sign-in
 //
-// One call. There is no code to request and none to verify: the API takes a mobile
-// number and opens a session for it.
-//
-// The number is a CLAIM, not a proof — nothing verifies that the person typing it owns
-// it. The authorisation layer downstream is unchanged and still scopes every record to
-// one account, but it is separating claimed identities, not verified ones.
-export type SignInBody = {
-  mobile: string;
-  /** "login" or "signup" — wording only; both succeed. */
+// Sign in with Google. The browser gets a Google ID token from Google Identity Services
+// (components/GoogleButton.tsx) and hands it to the API, which verifies it server-side
+// and returns OUR session token. The browser never tells the API who it is — the
+// verified token does.
+export type GoogleSignInBody = {
+  credential: string;
+  /** "login": existing account (a patient is created on first use). "signup": may
+   *  create a doctor account with its registration details. */
   intent: "login" | "signup";
   role?: "user" | "doctor";
   doctor_profile?: { doctor_name: string; registration_number: string; hospital: string };
+  /** Optional WhatsApp delivery number, E.164. */
+  mobile?: string;
 };
 
 export type SignInResult = {
@@ -119,8 +126,8 @@ export type SignInResult = {
   doctor_verification_pending: boolean;
 };
 
-export async function signIn(body: SignInBody): Promise<SignInResult> {
-  const r = await netFetch(`${API_BASE}/v1/auth/sign-in`, {
+export async function signInWithGoogle(body: GoogleSignInBody): Promise<SignInResult> {
+  const r = await netFetch(`${API_BASE}/v1/auth/google`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -132,6 +139,33 @@ export async function signIn(body: SignInBody): Promise<SignInResult> {
   const parsed: SignInResult = await r.json();
   setToken(parsed.token);
   return parsed;
+}
+
+/** The Google OAuth client ID: from the build env if set, otherwise from the API. */
+export async function googleClientId(): Promise<string | null> {
+  const fromEnv = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (fromEnv) return fromEnv;
+  try {
+    const r = await netFetch(`${API_BASE}/v1/auth/config`, { cache: "no-store" });
+    if (!r.ok) return null;
+    return (await r.json()).google_client_id || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Set (or clear, with null) the signed-in account's WhatsApp delivery number. */
+export async function setWhatsAppNumber(mobile: string | null): Promise<Account> {
+  const r = await authFetch("/v1/auth/me/whatsapp", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mobile }),
+  });
+  if (!r.ok) {
+    const e = await errorOf(r);
+    throw Object.assign(new Error(e.message), { code: e.code });
+  }
+  return (await r.json()).account;
 }
 
 export async function fetchSession(): Promise<Session> {
@@ -187,9 +221,16 @@ export const SIGN_IN_ERROR_MESSAGES: Record<string, string> = {
     "Cannot connect to the screening server. Make sure the API is running " +
     "(`make api` on port 8080), then try again.",
   internal_error: "The server hit an unexpected error. Check the API logs and try again.",
-  invalid_mobile: "That does not look like a valid mobile number.",
   account_suspended:
     "This account is not active. Contact the programme administrator.",
+  doctor_signup_required:
+    "There is no doctor account for this Google account yet. Create a doctor account first.",
+  google_not_configured:
+    "Sign in with Google is not set up on this server (GOOGLE_CLIENT_ID is missing).",
+  google_token_invalid: "Google sign-in could not be verified. Try again.",
+  google_email_unverified: "This Google account’s email is not verified.",
+  google_unavailable: "Could not reach Google to verify sign-in. Try again.",
+  google_popup_failed: "Google sign-in was closed or blocked. Try again.",
 };
 
 export function signInErrorMessage(e: any): string {

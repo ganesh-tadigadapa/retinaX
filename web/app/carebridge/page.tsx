@@ -6,6 +6,7 @@
  * they can put the interface into their own language, and a judge should not have to be
  * walked to it.
  */
+import { Bell, BookOpen, Calendar, CircleCheck, Globe, Lightbulb, Microscope, Navigation, Phone, Pill, Volume2 } from "lucide-react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import { useCareBridge } from "@/components/carebridge/CareBridgeProvider";
@@ -15,19 +16,19 @@ import WhyThis from "@/components/carebridge/WhyThis";
 import CoveragePanel from "@/components/carebridge/CoveragePanel";
 
 const JOURNEY = [
-  { icon: "🔬", title: "journey.detect", body: "journey.detectBody" },
-  { icon: "💡", title: "journey.understand", body: "journey.understandBody" },
-  { icon: "🔊", title: "journey.communicate", body: "journey.communicateBody" },
-  { icon: "🧭", title: "journey.guide", body: "journey.guideBody" },
-  { icon: "✅", title: "journey.act", body: "journey.actBody" },
+  { icon: <Microscope className="ico" size={16} strokeWidth={1.75} />, title: "journey.detect", body: "journey.detectBody" },
+  { icon: <Lightbulb className="ico" size={16} strokeWidth={1.75} />, title: "journey.understand", body: "journey.understandBody" },
+  { icon: <Volume2 className="ico" size={16} strokeWidth={1.75} />, title: "journey.communicate", body: "journey.communicateBody" },
+  { icon: <Navigation className="ico" size={16} strokeWidth={1.75} />, title: "journey.guide", body: "journey.guideBody" },
+  { icon: <CircleCheck className="ico" size={16} strokeWidth={1.75} />, title: "journey.act", body: "journey.actBody" },
 ] as const;
 
 const FUTURE = [
-  { icon: "📞", title: "future.telemedicine", body: "future.telemedicineBody" },
-  { icon: "📅", title: "future.appointments", body: "future.appointmentsBody" },
-  { icon: "📚", title: "future.education", body: "future.educationBody" },
-  { icon: "🔔", title: "future.reminders", body: "future.remindersBody" },
-  { icon: "💊", title: "future.medication", body: "future.medicationBody" },
+  { icon: <Phone className="ico" size={16} strokeWidth={1.75} />, title: "future.telemedicine", body: "future.telemedicineBody" },
+  { icon: <Calendar className="ico" size={16} strokeWidth={1.75} />, title: "future.appointments", body: "future.appointmentsBody" },
+  { icon: <BookOpen className="ico" size={16} strokeWidth={1.75} />, title: "future.education", body: "future.educationBody" },
+  { icon: <Bell className="ico" size={16} strokeWidth={1.75} />, title: "future.reminders", body: "future.remindersBody" },
+  { icon: <Pill className="ico" size={16} strokeWidth={1.75} />, title: "future.medication", body: "future.medicationBody" },
 ] as const;
 
 export default function CareBridgePage() {
@@ -36,12 +37,12 @@ export default function CareBridgePage() {
   return (
     <Shell>
       <section className="cb-pagehero">
-        <div className="eyebrow"><span aria-hidden="true">🌍</span> {t("common.appName")}</div>
+        <div className="eyebrow"><span aria-hidden="true"><Globe className="ico" size={16} strokeWidth={1.75} /></span> {t("common.appName")}</div>
         <h2>{t("onboarding.title")}</h2>
         <p className="cb-lede">{t("common.appTagline")} — {t("onboarding.subtitle")}</p>
         <LanguageChoices />
         <p className="cb-note">
-          <span aria-hidden="true">🔊</span> {t("onboarding.voiceNote")} · {t("onboarding.changeLater")}
+          <span aria-hidden="true"><Volume2 className="ico" size={16} strokeWidth={1.75} /></span> {t("onboarding.voiceNote")} · {t("onboarding.changeLater")}
         </p>
         <SpeakButton
           id="carebridge-intro"

@@ -13,6 +13,7 @@
  * component state and never written to storage — what a person eats is not a UI
  * preference, and CareBridge stores only UI preferences.
  */
+import { Footprints, Plus, Salad, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useCareBridge } from "./CareBridgeProvider";
 import SpeakButton from "./SpeakButton";
@@ -42,7 +43,7 @@ export default function Nutrition() {
   return (
     <section className="card cb-section" aria-labelledby="cb-nutrition-h">
       <div className="eyebrow">
-        <span aria-hidden="true">🥗</span> {t("actions.lifestyleTitle")}
+        <span aria-hidden="true"><Salad className="ico" size={16} strokeWidth={1.75} /></span> {t("actions.lifestyleTitle")}
       </div>
       <h3 id="cb-nutrition-h" className="cb-h">{t("nutrition.title")}</h3>
       <p className="cb-lede">{t("nutrition.intro")}</p>
@@ -78,7 +79,7 @@ export default function Nutrition() {
 
       <div className="cb-foodgrid">
         <div className="cb-foodcol good">
-          <h4><span aria-hidden="true">✚</span> {t("nutrition.focusTitle")}</h4>
+          <h4><span aria-hidden="true"><Plus className="ico" size={16} strokeWidth={1.75} /></span> {t("nutrition.focusTitle")}</h4>
           <ul>{focus.map((item, i) => <li key={i}>{item}</li>)}</ul>
         </div>
         <div className="cb-foodcol limit">
@@ -89,11 +90,11 @@ export default function Nutrition() {
 
       <div className="cb-tworow">
         <div className="cb-minicard">
-          <h4><span aria-hidden="true">🚶</span> {t("nutrition.activityTitle")}</h4>
+          <h4><span aria-hidden="true"><Footprints className="ico" size={16} strokeWidth={1.75} /></span> {t("nutrition.activityTitle")}</h4>
           <p>{t("nutrition.activityBody")}</p>
         </div>
         <div className="cb-minicard">
-          <h4><span aria-hidden="true">📈</span> {t("nutrition.controlTitle")}</h4>
+          <h4><span aria-hidden="true"><TrendingUp className="ico" size={16} strokeWidth={1.75} /></span> {t("nutrition.controlTitle")}</h4>
           <p>{t("nutrition.controlBody")}</p>
         </div>
       </div>

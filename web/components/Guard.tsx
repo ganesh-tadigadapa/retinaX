@@ -56,7 +56,7 @@ export default function Guard({ children, requireDoctor = false }: {
     return (
       <Panel
         title="Sign in to continue"
-        body="This area needs a verified mobile number."
+        body="Sign in with Google to continue."
         action={<Link href="/login" className="cta solid">Sign in</Link>}
       />
     );
@@ -71,7 +71,7 @@ export default function Guard({ children, requireDoctor = false }: {
           body={
             <>
               <p style={{ marginTop: 0 }}>
-                Your doctor account has been created and your mobile number is verified.
+                Your doctor account has been created.
                 A programme administrator still has to confirm your medical registration
                 before the reports area opens.
               </p>

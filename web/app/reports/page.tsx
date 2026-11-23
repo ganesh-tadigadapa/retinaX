@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import Guard from "@/components/Guard";
 import Shell from "@/components/Shell";
+import PageHeader from "@/components/PageHeader";
 import { listReports, type ReportRow } from "@/lib/reports";
 import AddPatient from "@/components/AddPatient";
 
@@ -131,17 +132,13 @@ export default function ReportsPage() {
   return (
     <Guard requireDoctor>
       <Shell>
-        <h2 style={{ fontFamily: "var(--f-display)", fontWeight: 500, marginTop: 0 }}>
-          Screening reports
-        </h2>
-        <p className="muted" style={{ marginTop: -6, marginBottom: 18 }}>
+        <PageHeader eyebrow="Clinical" title="Screening reports">
           The screenings of patients who have shared their record with you, anonymised
           for clinical review. A verified doctor account does not by itself open anybody
           else&rsquo;s results.
-        </p>
+        </PageHeader>
         {/* How a doctor reaches a patient they have never met. */}
         <AddPatient onAdded={() => window.location.reload()} />
-        <div style={{ height: 16 }} />
         <ReportsTable />
       </Shell>
     </Guard>

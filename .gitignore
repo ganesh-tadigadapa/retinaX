@@ -45,3 +45,6 @@ results/active/
 
 # local env backups — may contain live credentials
 .env.bak*
+
+# local server logs
+.logs/

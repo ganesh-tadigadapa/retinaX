@@ -10,6 +10,7 @@
  * cannot be looked up again or re-displayed — losing it means minting another, which is
  * the correct trade for a credential that hands over a medical history.
  */
+import { Handshake } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useCareBridge } from "@/components/carebridge/CareBridgeProvider";
 import WhyThis from "@/components/carebridge/WhyThis";
@@ -76,7 +77,7 @@ export default function ShareWithDoctor() {
   return (
     <section className="card cb-section" aria-labelledby="share-h">
       <div className="eyebrow">
-        <span aria-hidden="true">🤝</span> {t("sharing.eyebrow")}
+        <span aria-hidden="true"><Handshake className="ico" size={16} strokeWidth={1.75} /></span> {t("sharing.eyebrow")}
       </div>
       <h3 id="share-h" className="cb-h">{t("sharing.title")}</h3>
       <p className="cb-lede">{t("sharing.intro")}</p>

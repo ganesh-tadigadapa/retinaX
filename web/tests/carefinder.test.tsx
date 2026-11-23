@@ -548,6 +548,13 @@ describe("when the service cannot search at all", () => {
     expect(text).not.toMatch(/=\s*\S/);
   });
 
+  it("points to the free OpenStreetMap hospital finder instead of a dead end", async () => {
+    stubSearch(OK_BODY([]), 200, NOT_CONFIGURED);
+    render(<Wrap><CareFinder r={makeResult()} /></Wrap>);
+    const link = await screen.findByRole("link", { name: new RegExp(en.careFinder.openFreeMap, "i") });
+    expect(link).toHaveAttribute("href", "/hospitals");
+  });
+
   it("says the screening result is unaffected", async () => {
     stubSearch(OK_BODY([]), 200, NOT_CONFIGURED);
     render(<Wrap><CareFinder r={makeResult()} /></Wrap>);

@@ -373,8 +373,8 @@ def test_the_recipient_is_the_accounts_number_and_nothing_else(client):
 
     This test used to be called `..._is_verified_by_construction` and asserted that an
     Account could only exist after an OTP confirmed that exact number. **That is no
-    longer true**: sign-in takes a mobile number as claimed, with no verification, so
-    the number on an account is what somebody typed.
+    longer true**: sign-in is Google, and the WhatsApp number is one the person sets on
+    their own account with no verification, so it is what somebody typed.
 
     What survives — and what this test now pins — is the OWNERSHIP rule, which is the
     part the delivery layer actually depends on: `WhatsAppSendIn` has no recipient
@@ -385,7 +385,7 @@ def test_the_recipient_is_the_accounts_number_and_nothing_else(client):
     from src.delivery.routes import WhatsAppSendIn
 
     # Still no duplicate flag: there is one number per account and it is Account.mobile.
-    assert not hasattr(Account("a", "+919812340001"), "mobile_verified")
+    assert not hasattr(Account("a", mobile="+919812340001"), "mobile_verified")
 
     # The send body accepts a language and nothing else — there is nowhere to put a
     # recipient, which is what makes "sends to someone else's number" unreachable.

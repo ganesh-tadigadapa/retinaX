@@ -16,7 +16,8 @@
  * almost no naturally ungradeable images -- our quality gate refused 1 of 550 validation
  * images and 0 of 400 test images -- so a natural FOV failure was not available.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type Sample = {
   file: string; title: string; description: string; expect: "graded" | "refused";
@@ -27,6 +28,7 @@ export default function Samples({
   onPick, disabled,
 }: { onPick: (f: File, s: Sample) => void; disabled?: boolean }) {
   const [samples, setSamples] = useState<Sample[]>([]);
+  const stripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/samples/manifest.json")
@@ -43,30 +45,43 @@ export default function Samples({
     onPick(new File([blob], s.file, { type: blob.type || "image/jpeg" }), s);
   };
 
+  const scroll = (dir: number) =>
+    stripRef.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
+
   return (
-    <div className="card">
-      <div className="eyebrow">No fundus photo to hand? Try one of these</div>
-      <p className="muted" style={{ fontSize: ".8rem", margin: "6px 0 12px" }}>
-        Synthetic images, for exercising the pipeline. The last two are deliberately bad —
-        they should be refused with an instruction, not graded.
-      </p>
-      <div className="samples">
-        {samples.map((s) => (
-          <button
-            key={s.file}
-            className="sample"
-            onClick={() => pick(s)}
-            disabled={disabled}
-            aria-label={`Try sample: ${s.title}`}
-          >
-            <img src={`/samples/${s.file}`} alt={s.title} />
-            <span className={`badge ${s.expect === "refused" ? "refuse" : "grade"}`}>
-              {s.expect === "refused" ? "SHOULD REFUSE" : "SHOULD GRADE"}
-            </span>
-            <span className="t">{s.title}</span>
-            <span className="d">{s.description}</span>
-          </button>
-        ))}
+    <div className="rx-samples">
+      <div className="rx-sampleshead">
+        <span className="rx-samplestitle">Try a sample image</span>
+        <span className="rx-samplesnote">
+          Real APTOS photographs held out of training. The last two are deliberately bad —
+          they should be refused, not graded.
+        </span>
+      </div>
+      <div className="rx-samplesrow">
+        <button type="button" className="rx-iconbtn rx-arrow" onClick={() => scroll(-1)} aria-label="Previous samples">
+          <ChevronLeft size={18} />
+        </button>
+        <div className="rx-strip" ref={stripRef}>
+          {samples.map((s) => (
+            <button
+              key={s.file}
+              className="rx-thumb"
+              onClick={() => pick(s)}
+              disabled={disabled}
+              aria-label={`Try sample: ${s.title}`}
+              title={`${s.title} — ${s.description}`}
+            >
+              <img src={`/samples/${s.file}`} alt={s.title} />
+              <span className={`rx-thumbtag ${s.expect === "refused" ? "refuse" : "grade"}`}>
+                {s.expect === "refused" ? "Should refuse" : `Grade ${s.true_grade ?? "?"}`}
+              </span>
+              <span className="rx-thumbtitle">{s.title}</span>
+            </button>
+          ))}
+        </div>
+        <button type="button" className="rx-iconbtn rx-arrow" onClick={() => scroll(1)} aria-label="More samples">
+          <ChevronRight size={18} />
+        </button>
       </div>
     </div>
   );

@@ -21,6 +21,9 @@ export type Quality = {
   checks: Record<"focus" | "illumination" | "field_of_view", QualityCheck>;
   enhanced: boolean;
   recapture_instruction: string | null;
+  /** false = not a retinal photograph at all; nothing was graded. */
+  is_fundus?: boolean;
+  fundus_score?: number;
   thresholds_fitted?: boolean;
   threshold_source?: string;
 };
@@ -65,6 +68,7 @@ export type Health = {
   status: string; version: string; model_loaded: boolean; model_id: string;
   model_unavailable_reason: string | null; synthetic_demo_model?: boolean;
   store: string; disclaimer: string;
+  whatsapp?: { enabled: boolean; configured: boolean };
 };
 
 export async function getHealth(): Promise<Health> {

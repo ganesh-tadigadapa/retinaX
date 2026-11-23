@@ -145,6 +145,50 @@ class MetaWhatsAppProvider:
             return "provider_unconfigured", "WhatsApp delivery is not configured."
         return GENERIC_FAILURE
 
+    def send_auth_template(self, *, to_mobile: str, code: str, template: str,
+                           lang: str = "en_US") -> SendResult:
+        """Send a sign-in code with an AUTHENTICATION-category template.
+
+        Meta fixes the body of these templates ("{{1}} is your verification code.") and
+        the copy-code button takes the code again as its URL parameter, so the code is
+        passed twice. Works outside the 24-hour window, which a free-form text would not.
+        The code itself is never logged.
+        """
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": _to_digits(to_mobile),
+            "type": "template",
+            "template": {
+                "name": template,
+                "language": {"code": lang},
+                "components": [
+                    {"type": "body",
+                     "parameters": [{"type": "text", "text": code}]},
+                    {"type": "button", "sub_type": "url", "index": "0",
+                     "parameters": [{"type": "text", "text": code}]},
+                ],
+            },
+        }
+        try:
+            status, resp = self._post(payload)
+        except Exception as e:                           # noqa: BLE001
+            log.error("whatsapp otp failed for %s: %s", mask_mobile(to_mobile),
+                      type(e).__name__)
+            return SendResult(False, code="provider_unreachable",
+                              message="Could not reach the messaging service.")
+        messages = resp.get("messages") or []
+        if status == 200 and messages and (messages[0] or {}).get("id"):
+            return SendResult(True, code="sent", message="Code sent",
+                              provider_message_id=messages[0]["id"], status="accepted")
+        code_, message = self._translate(status, resp)
+        log.warning("whatsapp otp refused for %s: HTTP %s meta_code=%s subcode=%s "
+                    "msg=%s -> %s", mask_mobile(to_mobile), status,
+                    (resp.get("error") or {}).get("code"),
+                    (resp.get("error") or {}).get("error_subcode"),
+                    ((resp.get("error") or {}).get("message") or "")[:160], code_)
+        return SendResult(False, code=code_, message=message)
+
     def send_document(self, *, to_mobile: str, media_url: str, body: str,
                       filename: str = "") -> SendResult:
         """Send one report as a WhatsApp document.

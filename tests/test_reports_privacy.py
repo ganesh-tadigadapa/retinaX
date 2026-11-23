@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import json
 
-from tests.conftest import SCAN_WITH_PII, auth_header, signup, patient_with_shared_scan
+from tests.conftest import (SCAN_WITH_PII, auth_header, email_for, signup,
+                            patient_with_shared_scan)
 
 from src.api.reports import FORBIDDEN_FIELDS
 from src.auth import service
@@ -131,12 +132,15 @@ def test_the_account_store_never_contains_a_retinal_image(client, auth_store):
         assert marker not in raw
 
 
-def test_the_admin_doctor_queue_masks_mobile_numbers(client, auth_store, monkeypatch):
+def test_the_admin_doctor_queue_shows_email_but_not_whatsapp_number(client, auth_store,
+                                                                    monkeypatch):
     from src.auth import config as cfg
-    monkeypatch.setattr(cfg, "ADMIN_MOBILES", ("+919876533050",))
+    monkeypatch.setattr(cfg, "ADMIN_EMAILS", (email_for("+919876533050"),))
     admin = signup(client, "+919876533050", "user")
     signup(client, DOC, "doctor")
     body = client.get("/v1/auth/admin/doctors",
                       headers=auth_header(admin["token"])).json()
-    assert body["doctors"][0]["mobile_masked"].count("*") >= 5
+    # The admin must know who is asking to be a doctor: that is the Google email.
+    assert body["doctors"][0]["email"] == email_for(DOC)
+    # The WhatsApp delivery number is not part of that queue.
     assert DOC not in json.dumps(body)

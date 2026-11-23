@@ -1,6 +1,7 @@
 # Entry points. Run `make` for the list.
 PY := .venv/bin/python
-API := http://127.0.0.1:8080
+API_PORT ?= 8080
+API := http://127.0.0.1:$(API_PORT)
 
 .DEFAULT_GOAL := help
 .PHONY: help setup api web web-build web-test web-typecheck test lint synth quality-fit sim params docker deploy clean freeze holdout ablation explain smoke doctors approve-doctor whatsapp-check care-finder-check tunnel
@@ -16,8 +17,8 @@ setup:  ## create the venv and install everything
 	@echo "$(PWD)" > .venv/lib/python3.11/site-packages/sih_dr.pth
 	cd web && npm install
 
-api:  ## run the API on :8080
-	$(PY) -m uvicorn src.api.main:app --host 0.0.0.0 --port 8080 --reload
+api:  ## run the API on :$(API_PORT) (default 8080; e.g. make api API_PORT=8081)
+	$(PY) -m uvicorn src.api.main:app --host 0.0.0.0 --port $(API_PORT) --reload
 
 web:  ## run the frontend on :3000
 	cd web && npm run dev
@@ -61,7 +62,7 @@ smoke:  ## end-to-end check against a running API (TOKEN=... for the authenticat
 	    -F "file=@data/interim/synthetic/bad_blur.png" $(API)/v1/analyze ; \
 	else \
 	  echo "-- screening: SKIPPED (no TOKEN) --" ; \
-	  echo "   Twilio Verify owns the code, so there is no development OTP to mint one from." ; \
+	  echo "   Sign-in is Google, so there is no token to mint from the command line." ; \
 	  echo "   Sign in at the website, copy 'dr_session_token' from localStorage, then:" ; \
 	  echo "     make smoke TOKEN=<token>" ; \
 	fi
@@ -78,8 +79,8 @@ tunnel:  ## expose the API over HTTPS so Twilio can fetch report PDFs (restart t
 doctors:  ## list doctor accounts and their verification state
 	$(PY) scripts/approve_doctor.py --list
 
-approve-doctor:  ## approve a doctor account (needs MOBILE=+91XXXXXXXXXX)
-	$(PY) scripts/approve_doctor.py --mobile $(MOBILE)
+approve-doctor:  ## approve a doctor account (needs EMAIL=doctor@gmail.com)
+	$(PY) scripts/approve_doctor.py --email $(EMAIL)
 
 quality-fit:  ## fit the quality-gate thresholds (needs LABELS=path/to/labels.csv)
 	$(PY) scripts/compare_focus_metrics.py --labels $(LABELS)

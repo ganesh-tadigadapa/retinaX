@@ -38,11 +38,38 @@ class FakeScanStore:
     backend = "fake"
 
 
+TEST_CLIENT_ID = "test-client-id.apps.googleusercontent.com"
+
+
+def _fake_verify_token(credential: str, client_id: str) -> dict:
+    """Stands in for Google's signature check. A fake credential is
+    "test|<sub>|<email>|<email_verified 0/1>|<aud>"; anything else is refused the way
+    google-auth refuses a bad token (ValueError)."""
+    parts = credential.split("|")
+    if len(parts) != 5 or parts[0] != "test":
+        raise ValueError("Wrong number of segments in token")
+    _, sub, email, verified, aud = parts
+    if aud != client_id:
+        raise ValueError("Token has wrong audience")
+    return {"iss": "https://accounts.google.com", "sub": sub, "email": email,
+            "email_verified": verified == "1", "name": "Test Person",
+            "picture": "", "aud": aud}
+
+
+@pytest.fixture(autouse=True)
+def _fake_google(monkeypatch):
+    """No test talks to Google. The verifier is replaced at its one seam, and a client ID
+    is configured so the audience check is real."""
+    from src.auth import google as google_mod
+    monkeypatch.setattr(auth_cfg, "GOOGLE_CLIENT_ID", TEST_CLIENT_ID, raising=False)
+    monkeypatch.setattr(google_mod, "_verify_token", _fake_verify_token)
+
+
 @pytest.fixture
 def auth_store(tmp_path, monkeypatch):
     store = LocalAuthStore(tmp_path / "auth")
     set_auth_store(store)
-    monkeypatch.setattr(auth_cfg, "ADMIN_MOBILES", (), raising=False)
+    monkeypatch.setattr(auth_cfg, "ADMIN_EMAILS", (), raising=False)
     yield store
     set_auth_store(None)
 
@@ -100,18 +127,40 @@ def client(auth_store, evidence, scan_store, passport):
 
 
 # ------------------------------------------------------------------ helpers
-def signup(client, mobile: str, role: str = "user", profile: dict | None = None) -> dict:
-    """Sign in through the HTTP API and return the session response.
+def _is_phone(who: str) -> bool:
+    return "@" not in who
 
-    One call now: there is no code to request and none to verify.
+
+def email_for(who: str) -> str:
+    """The Google email a test person signs in with. Suites written when identity was a
+    mobile number still pass numbers; each maps to one stable email."""
+    if not _is_phone(who):
+        return who.strip().lower()
+    return "".join(ch for ch in who if ch.isdigit()) + "@test.example"
+
+
+def google_credential(who: str, *, verified: bool = True,
+                      aud: str = TEST_CLIENT_ID) -> str:
+    """A fake Google ID token for `who` (an email, or a legacy mobile number)."""
+    email = email_for(who)
+    return f"test|g-{email}|{email}|{1 if verified else 0}|{aud}"
+
+
+def signup(client, who: str, role: str = "user", profile: dict | None = None) -> dict:
+    """Sign up through the HTTP API with Google and return the session response.
+
+    `who` is an email, or a mobile number — in which case that number is also stored as
+    the account's WhatsApp delivery number, so delivery suites keep working unchanged.
     """
-    body = {"mobile": mobile, "intent": "signup", "role": role}
+    body = {"credential": google_credential(who), "intent": "signup", "role": role}
+    if _is_phone(who):
+        body["mobile"] = who
     if role == "doctor":
         body["doctor_profile"] = profile or {
             "doctor_name": "Dr Test", "registration_number": "TN-12345",
             "hospital": "District Hospital",
         }
-    r = client.post("/v1/auth/sign-in", json=body)
+    r = client.post("/v1/auth/google", json=body)
     assert r.status_code == 200, r.text
     return r.json()
 

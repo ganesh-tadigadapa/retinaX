@@ -21,11 +21,11 @@ pydantic==2.9.2
 reportlab==4.2.5
 
 # --- auth ---
-# Nothing. Authentication is this project's own OTP flow: the code is generated with
-# `secrets`, hashed with `hmac`/`hashlib`, and delivered over `httpx` (below) to the
-# httpSMS API. No identity-provider SDK is installed, and none is needed.
-#
-# `firebase-admin` used to be here for Firebase Phone Auth and has been removed with it.
+# Sign in with Google. `google-auth` verifies the Google ID token's signature offline
+# against Google's published certificates (fetched with `requests` and cached), and
+# checks the audience is our OAuth client ID. See src/auth/google.py.
+google-auth==2.35.0
+requests==2.32.3
 #
 # PINNED, and the pin is load-bearing. TensorFlow 2.16.2 requires protobuf <5.0.0, and
 # several Google client libraries resolve it to >=5 when left unpinned, which breaks the

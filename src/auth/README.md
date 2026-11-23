@@ -12,18 +12,22 @@ it. You could delete the whole folder and the screening science would still run.
 | File | Plain job |
 |---|---|
 | `config.py` | Reads the settings, and refuses to start if they are dangerous |
-| `models.py` | What an account is; tidying up phone numbers |
-| `otp.py` | Makes the one-time code, checks it, and stops people guessing |
-| `sms.py` | Sends the code. Swappable — no SMS company is named anywhere else |
+| `models.py` | What an account is; tidying up the optional WhatsApp number |
+| `google.py` | Checks the "Sign in with Google" token really came from Google, for this app |
 | `security.py` | Sign-in tickets, and the guards on each door |
-| `service.py` | The actual actions: send a code, check it, sign out, approve a doctor |
+| `service.py` | The actual actions: sign in, save a WhatsApp number, sign out, approve a doctor |
 | `storage.py` | Remembers accounts. In its own files, never mixed with scans |
 | `routes.py` | The web addresses: `/v1/auth/...` |
 
 ## No passwords
 
-There is no password box, and no place to put one. You prove who you are by showing that
-you hold the phone number: the system sends a six-digit code and you type it back.
+There is no password box, and no place to put one. You sign in with your Google account:
+Google confirms who you are and hands the browser a signed token, and the server checks
+that signature itself before letting you in. This service never sees your Google
+password.
+
+A phone number is no longer part of signing in. You can save a WhatsApp number on your
+account so reports can be sent to you, but it is only an address, not a key.
 
 ## Choosing "Doctor" does not make you a doctor
 
@@ -42,8 +46,8 @@ time you knock on a protected door, the server looks your account up and reads y
 off its own records. Editing anything in the browser changes what you see drawn on the
 screen; it changes nothing about what the server will hand over.
 
-## The code on the screen
+## The first administrator
 
-When running locally the one-time code is printed on screen instead of sent by SMS,
-because there is no SMS account. That shortcut is **impossible to leave switched on** in a
-real deployment: the service refuses to start if you try. See `docs/AUTH.md`.
+Someone has to approve the first doctor. The Google emails listed in `ADMIN_EMAILS` (in
+the server's environment, not in any form) become administrators the first time they
+sign in. See `docs/AUTH.md`.

@@ -48,6 +48,7 @@ export const pa: Translations = {
     limitations: "ਸੀਮਾਵਾਂ",
     carebridge: "CareBridge",
     passport: "ਪਾਸਪੋਰਟ",
+    hospitals: "ਅੱਖਾਂ ਦੇ ਹਸਪਤਾਲ",
     login: "ਲੌਗਇਨ",
     signup: "ਖਾਤਾ ਬਣਾਓ",
     logout: "ਲੌਗਆਊਟ",
@@ -86,16 +87,18 @@ export const pa: Translations = {
 
   auth: {
     signInTitle: "ਸਾਈਨ ਇਨ ਕਰੋ",
-    signInSub: "ਆਪਣਾ ਮੋਬਾਈਲ ਨੰਬਰ ਪਾਓ। ਅਸੀਂ ਤੁਹਾਨੂੰ ਇੱਕ ਵਾਰੀ ਵਰਤਣ ਵਾਲਾ ਕੋਡ ਭੇਜਾਂਗੇ।",
+    signInSub: "Google ਨਾਲ ਜਾਰੀ ਰੱਖੋ। ਚੁਣੋ ਕਿ ਤੁਸੀਂ ਮਰੀਜ਼ ਵਜੋਂ ਸਾਈਨ ਇਨ ਕਰ ਰਹੇ ਹੋ ਜਾਂ ਡਾਕਟਰ ਵਜੋਂ।",
     createTitle: "ਖਾਤਾ ਬਣਾਓ",
-    createSub: "ਜਾਂਚ ਲਈ ਪ੍ਰਮਾਣਿਤ ਮੋਬਾਈਲ ਨੰਬਰ ਚਾਹੀਦਾ ਹੈ। ਕੋਈ ਪਾਸਵਰਡ ਨਹੀਂ ਹੈ।",
-    mobileLabel: "ਮੋਬਾਈਲ ਨੰਬਰ",
-    otpPrompt: "ਅਸੀਂ ਜੋ ਕੋਡ ਭੇਜਿਆ ਹੈ, ਉਹ ਪਾਓ।",
-    noPassword: "ਤੁਹਾਡੇ ਖਾਤੇ ਲਈ ਕੋਈ ਪਾਸਵਰਡ ਕਦੇ ਸੰਭਾਲਿਆ ਨਹੀਂ ਜਾਂਦਾ।",
+    createSub: "Google ਨਾਲ ਆਪਣਾ ਖਾਤਾ ਬਣਾਓ। ਕੋਈ ਪਾਸਵਰਡ ਯਾਦ ਰੱਖਣ ਦੀ ਲੋੜ ਨਹੀਂ।",
+    mobileLabel: "WhatsApp ਨੰਬਰ (ਵਿਕਲਪਿਕ)",
+    whatsappHint: "ਸਿਰਫ਼ ਤੁਹਾਡੀਆਂ ਰਿਪੋਰਟਾਂ WhatsApp 'ਤੇ ਭੇਜਣ ਲਈ। ਤੁਸੀਂ ਇਸਨੂੰ ਬਾਅਦ ਵਿੱਚ ਜੋੜ ਜਾਂ ਬਦਲ ਸਕਦੇ ਹੋ।",
+    noPassword: "ਕੋਈ ਪਾਸਵਰਡ ਨਹੀਂ ਸੰਭਾਲਿਆ ਜਾਂਦਾ — Google ਪੁਸ਼ਟੀ ਕਰਦਾ ਹੈ ਕਿ ਤੁਸੀਂ ਕੌਣ ਹੋ।",
     languageStays: "ਭਾਸ਼ਾ ਬਦਲਣ ਨਾਲ ਤੁਸੀਂ ਸਾਈਨ ਆਊਟ ਨਹੀਂ ਹੁੰਦੇ।",
   },
 
   screen: {
+    resultBelow: "ਤੁਹਾਡਾ ਨਤੀਜਾ ਹੇਠਾਂ ਤਿਆਰ ਹੈ",
+    screenAnother: "ਹੋਰ ਤਸਵੀਰ ਦੀ ਜਾਂਚ ਕਰੋ",
     title: "ਰੈਟੀਨਾ ਦੀ ਤਸਵੀਰ ਦੀ ਜਾਂਚ ਕਰੋ",
     subtitle: "ਅੱਖ ਦੇ ਪਿਛਲੇ ਹਿੱਸੇ ਦੀ ਇੱਕ ਤਸਵੀਰ ਅਪਲੋਡ ਕਰੋ। ਨਤੀਜਾ ਕੁਝ ਸਕਿੰਟਾਂ ਵਿੱਚ ਆ ਜਾਂਦਾ ਹੈ।",
     upload: "ਫੰਡਸ ਤਸਵੀਰ ਅਪਲੋਡ ਕਰੋ",
@@ -115,6 +118,9 @@ export const pa: Translations = {
   },
 
   quality: {
+    notFundusTitle: "ਇਹ ਰੈਟੀਨਾ ਦੀ ਤਸਵੀਰ ਨਹੀਂ ਹੈ",
+    notFundusWhy: "ਸਿਰਫ਼ ਅੱਖ ਦੇ ਪਿਛਲੇ ਹਿੱਸੇ (ਫੰਡਸ) ਦੀ ਤਸਵੀਰ ਦੀ ਜਾਂਚ ਹੋ ਸਕਦੀ ਹੈ। ਇਹ ਤਸਵੀਰ ਉਸ ਵਰਗੀ ਨਹੀਂ ਲੱਗਦੀ, ਇਸ ਲਈ ਇਸਨੂੰ ਗ੍ਰੇਡ ਨਹੀਂ ਕੀਤਾ ਗਿਆ।",
+    notFundusWhatToDo: "ਫੰਡਸ ਤਸਵੀਰ ਅੱਪਲੋਡ ਕਰੋ: ਗੂੜ੍ਹੇ ਪਿਛੋਕੜ ’ਤੇ ਰੈਟੀਨਾ ਦੀ ਗੋਲ, ਸੰਤਰੀ-ਲਾਲ ਤਸਵੀਰ, ਜੋ ਫੰਡਸ ਕੈਮਰੇ ਜਾਂ ਸਮਾਰਟਫ਼ੋਨ ਫੰਡਸ ਅਡੈਪਟਰ ਨਾਲ ਲਈ ਗਈ ਹੋਵੇ।",
     failTitle: "ਤਸਵੀਰ ਕਾਫ਼ੀ ਸਾਫ਼ ਨਹੀਂ ਹੈ",
     whyTitle: "ਕਿਉਂ?",
     whyBody:
@@ -136,6 +142,9 @@ export const pa: Translations = {
   },
 
   result: {
+    tabCare: "ਸੁਝਾਈ ਗਈ ਦੇਖਭਾਲ",
+    tabMeaning: "ਇਸਦਾ ਕੀ ਮਤਲਬ ਹੈ",
+    tabInsights: "AI ਜਾਣਕਾਰੀ",
     eyebrow: "ਤੁਹਾਡੀ ਜਾਂਚ ਦਾ ਨਤੀਜਾ",
     title: "ਤੁਹਾਡੀ ਜਾਂਚ ਦਾ ਨਤੀਜਾ",
     gradeWord: "ਗ੍ਰੇਡ",
@@ -171,6 +180,8 @@ export const pa: Translations = {
     clinicalOpen: "ਡਾਕਟਰੀ ਵੇਰਵਾ ਵਿਖਾਓ",
     clinicalClose: "ਡਾਕਟਰੀ ਵੇਰਵਾ ਲੁਕਾਓ",
     confidence: "ਭਰੋਸਾ",
+    referralConfidence: "ਰੈਫ਼ਰਲ ’ਤੇ ਭਰੋਸਾ",
+    exactGradeConfidence: "ਸਹੀ ਗ੍ਰੇਡ",
     confidenceNote:
       "ਭਰੋਸਾ ਦੱਸਦਾ ਹੈ ਕਿ ਸਿਸਟਮ ਆਪਣੇ ਦੱਸੇ ਗ੍ਰੇਡ ਬਾਰੇ ਕਿੰਨਾ ਪੱਕਾ ਹੈ — ਇਹ ਇਸ ਗੱਲ ਦੀ ਸੰਭਾਵਨਾ ਨਹੀਂ ਕਿ ਤੁਹਾਨੂੰ ਰੋਗ ਹੈ।",
     calibrated: "ਕੈਲੀਬ੍ਰੇਟ ਕੀਤਾ",
@@ -221,15 +232,18 @@ export const pa: Translations = {
     readyTitle: "ਤੁਹਾਡੀ ਸਕ੍ਰੀਨਿੰਗ ਰਿਪੋਰਟ ਤਿਆਰ ਹੈ",
     readyBody: "ਤੁਹਾਡੀ ਵਿਸਥਾਰਤ ਕੇਅਰਬ੍ਰਿਜ ਰਿਪੋਰਟ ਸਫ਼ਲਤਾਪੂਰਵਕ ਤਿਆਰ ਹੋ ਗਈ ਹੈ।",
     channelLabel: "ਵਟਸਐਪ ਰਾਹੀਂ ਭੇਜਣਾ",
-    verifiedNumberIntro: "ਇਹ ਰਿਪੋਰਟ ਆਪਣੇ ਤਸਦੀਕਸ਼ੁਦਾ ਵਟਸਐਪ ਨੰਬਰ ਉੱਤੇ ਭੇਜੋ:",
+    verifiedNumberIntro: "ਇਹ ਰਿਪੋਰਟ ਆਪਣੇ WhatsApp ਨੰਬਰ 'ਤੇ ਭੇਜੋ:",
     send: "ਵਟਸਐਪ ਉੱਤੇ ਰਿਪੋਰਟ ਭੇਜੋ",
     sending: "ਰਿਪੋਰਟ ਭੇਜੀ ਜਾ ਰਹੀ ਹੈ…",
     sentShort: "ਰਿਪੋਰਟ ਵਟਸਐਪ ਉੱਤੇ ਭੇਜ ਦਿੱਤੀ ਗਈ",
     queuedShort: "ਵਟਸਐਪ ਸੁਨੇਹਾ ਭੇਜਣ ਲਈ ਕਤਾਰ ਵਿੱਚ ਹੈ",
     failedShort: "ਰਿਪੋਰਟ ਭੇਜੀ ਨਹੀਂ ਜਾ ਸਕੀ",
     retry: "ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
-    explain: "ਤੁਹਾਡੀ ਪੀਡੀਐਫ਼ ਤੁਹਾਡੇ ਰਜਿਸਟਰ ਕੀਤੇ ਵਟਸਐਪ ਨੰਬਰ ਉੱਤੇ ਭੇਜੀ ਜਾਵੇਗੀ।",
-    registeredNote: "ਅਸੀਂ ਉਹੀ ਨੰਬਰ ਵਰਤਦੇ ਹਾਂ ਜਿਸ ਨਾਲ ਤੁਸੀਂ ਸਾਈਨ ਇਨ ਕੀਤਾ ਸੀ। ਤੁਹਾਨੂੰ ਇਹ ਦੁਬਾਰਾ ਲਿਖਣ ਦੀ ਲੋੜ ਨਹੀਂ।",
+    explain: "ਤੁਹਾਡੀ PDF ਤੁਹਾਡੇ ਖਾਤੇ ਵਿੱਚ ਸੰਭਾਲੇ WhatsApp ਨੰਬਰ 'ਤੇ ਭੇਜੀ ਜਾਵੇਗੀ।",
+    registeredNote: "ਇਹ ਤੁਹਾਡੇ ਖਾਤੇ ਵਿੱਚ ਸੰਭਾਲਿਆ WhatsApp ਨੰਬਰ ਹੈ।",
+    addNumberIntro: "ਇਹ ਰਿਪੋਰਟ ਆਪਣੇ ਫ਼ੋਨ 'ਤੇ ਲੈਣ ਲਈ ਆਪਣਾ WhatsApp ਨੰਬਰ ਜੋੜੋ।",
+    saveNumber: "ਨੰਬਰ ਸੰਭਾਲੋ",
+    invalidNumber: "10 ਅੰਕਾਂ ਦਾ ਮੋਬਾਈਲ ਨੰਬਰ ਪਾਓ।",
     successTitle: "ਰਿਪੋਰਟ ਸਫ਼ਲਤਾਪੂਰਵਕ ਭੇਜ ਦਿੱਤੀ ਗਈ",
     successBody: "ਤੁਹਾਡੀ ਸਕ੍ਰੀਨਿੰਗ ਰਿਪੋਰਟ ਇੱਥੇ ਭੇਜੀ ਗਈ ਹੈ:",
     successHint: "ਪੀਡੀਐਫ਼ ਵੇਖਣ ਲਈ ਵਟਸਐਪ ਖੋਲ੍ਹੋ।",
@@ -252,6 +266,7 @@ export const pa: Translations = {
       unreachable: "ਸੁਨੇਹਾ ਸੇਵਾ ਤੱਕ ਨਹੀਂ ਪਹੁੰਚ ਸਕੇ। ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
       reportMissing: "ਇਹ ਰਿਪੋਰਟ ਹੁਣ ਭੇਜਣ ਲਈ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।",
       alreadySending: "ਇਹ ਰਿਪੋਰਟ ਪਹਿਲਾਂ ਹੀ ਭੇਜੀ ਜਾ ਰਹੀ ਹੈ।",
+      noNumber: "ਪਹਿਲਾਂ ਆਪਣਾ WhatsApp ਨੰਬਰ ਜੋੜੋ।",
       generic: "ਵਟਸਐਪ ਉੱਤੇ ਰਿਪੋਰਟ ਭੇਜੀ ਨਹੀਂ ਜਾ ਸਕੀ।",
     },
   },
@@ -261,6 +276,16 @@ export const pa: Translations = {
   // Every sentence here talks about the SCREENING RESULT, never about the disease —
   // the same rule src/passport/comparison.py enforces on the backend.
   passport: {
+    overviewTitle: "ਸਾਰ",
+    overviewSubtitle: "ਤੁਹਾਡੀ ਅੱਖਾਂ ਦੀ ਸਿਹਤ ਇੱਕ ਨਜ਼ਰ ਵਿੱਚ।",
+    statTotal: "ਕੁੱਲ ਸਕ੍ਰੀਨਿੰਗਾਂ",
+    statAttention: "ਧਿਆਨ ਦੀ ਲੋੜ",
+    statNormal: "ਆਮ / ਹਲਕਾ",
+    statLast: "ਪਿਛਲੀ ਸਕ੍ਰੀਨਿੰਗ",
+    recentTitle: "ਹਾਲੀਆ ਨਤੀਜੇ",
+    newScreening: "ਨਵੀਂ ਸਕ੍ਰੀਨਿੰਗ",
+    viewReport: "ਰਿਪੋਰਟ ਵੇਖੋ",
+    notGraded: "ਗ੍ਰੇਡ ਨਹੀਂ ਕੀਤਾ",
     eyebrow: "ਆਈ ਹੈਲਥ ਪਾਸਪੋਰਟ",
     title: "ਤੁਹਾਡਾ ਆਈ ਹੈਲਥ ਪਾਸਪੋਰਟ",
     subtitle: "ਤੁਹਾਡੀ ਹਰ ਸਕ੍ਰੀਨਿੰਗ, ਅਤੇ ਉਹਨਾਂ ਵਿਚਕਾਰ ਕੀ ਬਦਲਿਆ।",
@@ -451,6 +476,7 @@ export const pa: Translations = {
 
     distanceKm: "{km} ਕਿ.ਮੀ. ਦੂਰ",
     distanceM: "{metres} ਮੀਟਰ ਦੂਰ",
+    openFreeMap: "ਨਕਸ਼ੇ ’ਤੇ ਅੱਖਾਂ ਦੇ ਹਸਪਤਾਲ ਲੱਭੋ",
     setupLabel: "ਸੈੱਟਅੱਪ ਬਾਕੀ ਹੈ",
     distanceFromYou: "ਤੁਹਾਡੇ ਟਿਕਾਣੇ ਤੋਂ ਦੂਰੀ",
     distanceFromArea: "{area} ਤੋਂ ਦੂਰੀ",
@@ -543,6 +569,16 @@ export const pa: Translations = {
     doctorAdded: "ਹੁਣ ਇਸ ਮਰੀਜ਼ ਦਾ ਇਤਿਹਾਸ ਤੁਹਾਡੇ ਲਈ ਉਪਲਬਧ ਹੈ।",
     doctorNoPatients:
       "ਹਾਲੇ ਤੱਕ ਕਿਸੇ ਮਰੀਜ਼ ਨੇ ਆਪਣਾ ਰਿਕਾਰਡ ਤੁਹਾਡੇ ਨਾਲ ਸਾਂਝਾ ਨਹੀਂ ਕੀਤਾ। ਮਰੀਜ਼ ਨੂੰ ਕਹੋ ਕਿ ਉਹ ਆਪਣੇ Eye Health Passport ਤੋਂ ਸਾਂਝਾ ਕੋਡ ਬਣਾਉਣ।",
+  },
+  shareWa: {
+    eyebrow: "ਸਾਂਝਾ ਕਰੋ",
+    title: "ਇਹ ਰਿਪੋਰਟ WhatsApp ’ਤੇ ਭੇਜੋ",
+    body: "PDF ਆਪਣੇ ਆਪ ਨੂੰ, ਪਰਿਵਾਰ ਦੇ ਕਿਸੇ ਮੈਂਬਰ ਨੂੰ ਜਾਂ ਆਪਣੇ ਡਾਕਟਰ ਨੂੰ ਭੇਜੋ।",
+    button: "WhatsApp ’ਤੇ ਸਾਂਝਾ ਕਰੋ",
+    opening: "ਖੁੱਲ੍ਹ ਰਿਹਾ ਹੈ…",
+    desktopNote: "ਇਸ ਡਿਵਾਈਸ ’ਤੇ PDF ਡਾਊਨਲੋਡ ਹੋਵੇਗੀ ਅਤੇ WhatsApp ਖੁੱਲ੍ਹੇਗਾ — ਡਾਊਨਲੋਡ ਕੀਤੀ ਫ਼ਾਈਲ ਆਪਣੀ ਚੈਟ ਵਿੱਚ ਜੋੜੋ।",
+    message: "ਮੇਰੀ RETINEX ਅੱਖਾਂ ਦੀ ਜਾਂਚ ਰਿਪੋਰਟ ਨਾਲ ਹੈ (ਸਕੈਨ {ref})।",
+    failed: "ਸਾਂਝਾ ਕਰਨਾ ਨਹੀਂ ਖੁੱਲ੍ਹ ਸਕਿਆ। “ਰਿਪੋਰਟ ਡਾਊਨਲੋਡ ਕਰੋ” ਵਰਤੋ।",
   },
   why: {
     label: "ਮੈਨੂੰ ਇਹ ਕਿਉਂ ਦਿਸ ਰਿਹਾ ਹੈ?",

@@ -49,6 +49,7 @@ export const hi: Translations = {
     limitations: "सीमाएँ",
     carebridge: "CareBridge",
     passport: "पासपोर्ट",
+    hospitals: "नेत्र अस्पताल",
     login: "लॉगिन",
     signup: "खाता बनाएँ",
     logout: "लॉगआउट",
@@ -87,16 +88,18 @@ export const hi: Translations = {
 
   auth: {
     signInTitle: "साइन इन करें",
-    signInSub: "अपना मोबाइल नंबर डालिए। हम आपको एक बार का कोड भेजेंगे।",
+    signInSub: "Google से जारी रखें। चुनिए कि आप मरीज़ के रूप में साइन इन कर रहे हैं या डॉक्टर के रूप में।",
     createTitle: "खाता बनाएँ",
-    createSub: "जाँच के लिए सत्यापित मोबाइल नंबर चाहिए। कोई पासवर्ड नहीं है।",
-    mobileLabel: "मोबाइल नंबर",
-    otpPrompt: "हमने जो कोड भेजा है, वह डालिए।",
-    noPassword: "आपके खाते के लिए कोई पासवर्ड कभी संग्रहित नहीं किया जाता।",
+    createSub: "Google से अपना खाता बनाएँ। कोई पासवर्ड याद रखने की ज़रूरत नहीं।",
+    mobileLabel: "WhatsApp नंबर (वैकल्पिक)",
+    whatsappHint: "केवल आपकी रिपोर्ट WhatsApp पर भेजने के लिए। आप इसे बाद में जोड़ या बदल सकते हैं।",
+    noPassword: "कोई पासवर्ड संग्रहित नहीं किया जाता — Google पुष्टि करता है कि आप कौन हैं।",
     languageStays: "भाषा बदलने से आप साइन आउट नहीं होते।",
   },
 
   screen: {
+    resultBelow: "आपका परिणाम नीचे तैयार है",
+    screenAnother: "दूसरी तस्वीर की जाँच करें",
     title: "रेटिना की तस्वीर की जाँच करें",
     subtitle: "आँख के पिछले हिस्से की एक तस्वीर अपलोड कीजिए। परिणाम कुछ ही सेकंड में आता है।",
     upload: "फंडस तस्वीर अपलोड करें",
@@ -116,6 +119,9 @@ export const hi: Translations = {
   },
 
   quality: {
+    notFundusTitle: "यह रेटिना की तस्वीर नहीं है",
+    notFundusWhy: "केवल आँख के पिछले हिस्से (फंडस) की तस्वीर की जाँच हो सकती है। यह तस्वीर वैसी नहीं लगती, इसलिए इसे ग्रेड नहीं किया गया।",
+    notFundusWhatToDo: "फंडस तस्वीर अपलोड करें: गहरे बैकग्राउंड पर रेटिना की गोल, नारंगी-लाल तस्वीर, जो फंडस कैमरा या स्मार्टफोन फंडस एडेप्टर से ली गई हो।",
     failTitle: "तस्वीर पर्याप्त स्पष्ट नहीं है",
     whyTitle: "क्यों?",
     whyBody:
@@ -137,6 +143,9 @@ export const hi: Translations = {
   },
 
   result: {
+    tabCare: "सुझाई गई देखभाल",
+    tabMeaning: "इसका क्या मतलब है",
+    tabInsights: "AI जानकारी",
     eyebrow: "आपकी जाँच का परिणाम",
     title: "आपकी जाँच का परिणाम",
     gradeWord: "ग्रेड",
@@ -172,6 +181,8 @@ export const hi: Translations = {
     clinicalOpen: "चिकित्सकीय विवरण दिखाएँ",
     clinicalClose: "चिकित्सकीय विवरण छिपाएँ",
     confidence: "विश्वास स्तर",
+    referralConfidence: "रेफ़रल पर विश्वास",
+    exactGradeConfidence: "सटीक ग्रेड",
     confidenceNote:
       "विश्वास स्तर बताता है कि सिस्टम अपने बताए ग्रेड को लेकर कितना निश्चित है — यह इस बात की संभावना नहीं है कि आपको रोग है।",
     calibrated: "अंशांकित",
@@ -222,15 +233,18 @@ export const hi: Translations = {
     readyTitle: "आपकी स्क्रीनिंग रिपोर्ट तैयार है",
     readyBody: "आपकी विस्तृत केयरब्रिज रिपोर्ट सफलतापूर्वक तैयार हो गई है।",
     channelLabel: "व्हाट्सऐप पर भेजना",
-    verifiedNumberIntro: "यह रिपोर्ट अपने सत्यापित व्हाट्सऐप नंबर पर भेजें:",
+    verifiedNumberIntro: "यह रिपोर्ट अपने WhatsApp नंबर पर भेजें:",
     send: "व्हाट्सऐप पर रिपोर्ट भेजें",
     sending: "रिपोर्ट भेजी जा रही है…",
     sentShort: "रिपोर्ट व्हाट्सऐप पर भेज दी गई",
     queuedShort: "व्हाट्सएप संदेश भेजने के लिए कतार में है",
     failedShort: "रिपोर्ट भेजी नहीं जा सकी",
     retry: "फिर कोशिश करें",
-    explain: "आपकी पीडीएफ़ आपके पंजीकृत व्हाट्सऐप नंबर पर भेजी जाएगी।",
-    registeredNote: "हम वही नंबर इस्तेमाल करते हैं जिससे आपने साइन इन किया था। आपको इसे दोबारा टाइप नहीं करना पड़ेगा।",
+    explain: "आपकी PDF आपके खाते में सहेजे गए WhatsApp नंबर पर भेजी जाएगी।",
+    registeredNote: "यह आपके खाते में सहेजा गया WhatsApp नंबर है।",
+    addNumberIntro: "यह रिपोर्ट अपने फ़ोन पर पाने के लिए अपना WhatsApp नंबर जोड़ें।",
+    saveNumber: "नंबर सहेजें",
+    invalidNumber: "10 अंकों का मोबाइल नंबर डालिए।",
     successTitle: "रिपोर्ट सफलतापूर्वक भेज दी गई",
     successBody: "आपकी स्क्रीनिंग रिपोर्ट यहाँ भेजी गई है:",
     successHint: "पीडीएफ़ देखने के लिए व्हाट्सऐप खोलें।",
@@ -253,6 +267,7 @@ export const hi: Translations = {
       unreachable: "संदेश सेवा तक नहीं पहुँच सके। दोबारा कोशिश करें।",
       reportMissing: "यह रिपोर्ट अब भेजने के लिए उपलब्ध नहीं है।",
       alreadySending: "यह रिपोर्ट पहले से ही भेजी जा रही है।",
+      noNumber: "पहले अपना WhatsApp नंबर जोड़ें।",
       generic: "व्हाट्सऐप पर रिपोर्ट भेजी नहीं जा सकी।",
     },
   },
@@ -262,6 +277,16 @@ export const hi: Translations = {
   // Every sentence here talks about the SCREENING RESULT, never about the disease —
   // the same rule src/passport/comparison.py enforces on the backend.
   passport: {
+    overviewTitle: "सारांश",
+    overviewSubtitle: "आपकी आँखों का स्वास्थ्य एक नज़र में।",
+    statTotal: "कुल स्क्रीनिंग",
+    statAttention: "ध्यान देने की ज़रूरत",
+    statNormal: "सामान्य / हल्का",
+    statLast: "पिछली स्क्रीनिंग",
+    recentTitle: "हाल के परिणाम",
+    newScreening: "नई स्क्रीनिंग",
+    viewReport: "रिपोर्ट देखें",
+    notGraded: "ग्रेड नहीं किया गया",
     eyebrow: "आई हेल्थ पासपोर्ट",
     title: "आपका आई हेल्थ पासपोर्ट",
     subtitle: "आपकी हर स्क्रीनिंग, और उनके बीच क्या बदला।",
@@ -452,6 +477,7 @@ export const hi: Translations = {
 
     distanceKm: "{km} किमी दूर",
     distanceM: "{metres} मीटर दूर",
+    openFreeMap: "मानचित्र पर आँखों के अस्पताल खोजें",
     setupLabel: "सेटअप बाकी है",
     distanceFromYou: "आपके स्थान से दूरी",
     distanceFromArea: "{area} से दूरी",
@@ -544,6 +570,16 @@ export const hi: Translations = {
     doctorAdded: "अब इस रोगी का इतिहास आपके लिए उपलब्ध है।",
     doctorNoPatients:
       "अभी तक किसी रोगी ने अपना रिकॉर्ड आपके साथ साझा नहीं किया है। रोगी से कहिए कि वे अपने Eye Health Passport से साझा कोड बनाएँ।",
+  },
+  shareWa: {
+    eyebrow: "साझा करें",
+    title: "यह रिपोर्ट WhatsApp पर भेजें",
+    body: "PDF को खुद को, परिवार के किसी सदस्य को या अपने डॉक्टर को भेजें।",
+    button: "WhatsApp पर साझा करें",
+    opening: "खुल रहा है…",
+    desktopNote: "इस डिवाइस पर PDF डाउनलोड होगी और WhatsApp खुलेगा — डाउनलोड की गई फ़ाइल को अपनी चैट में जोड़ें।",
+    message: "मेरी RETINEX आँख जाँच रिपोर्ट संलग्न है (स्कैन {ref})।",
+    failed: "साझा करना नहीं खुल सका। “रिपोर्ट डाउनलोड करें” का उपयोग करें।",
   },
   why: {
     label: "मुझे यह क्यों दिख रहा है?",

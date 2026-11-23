@@ -7,53 +7,69 @@ imports nothing from `src/auth/`, and `src/auth/` imports nothing from the pipel
 
 ---
 
-## 1. Identity is a mobile number — claimed, not proved
-
-There are no passwords and no one-time codes. Sign-in takes a mobile number and opens a
-session for it:
+## 0. Sign in with Google — the only way in
 
 ```
-mobile number -> POST /v1/auth/sign-in -> application session (HMAC token)
+browser: Google Identity Services button -> Google account chooser -> ID token (JWT)
+browser -> POST /v1/auth/google {credential, intent, role, doctor_profile?, mobile?}
+API: verify token (src/auth/google.py) -> find/create account by Google user id -> session
 ```
 
-**Nothing verifies that the person typing the number owns it.** That is a deliberate
-product decision for this build, and it is written here rather than left to be
-discovered. What it means in practice:
+Free: Google charges nothing for Sign in with Google, at any number of users. There is
+no password, no OTP and no SMS/WhatsApp cost for signing in.
 
-| Still true | No longer true |
-|---|---|
-| One number maps to exactly one account | The number proves who you are |
-| A patient cannot read another account's records | Somebody else cannot claim your number |
-| A doctor needs an explicit grant per patient | The person behind an account was checked |
-| Choosing "Doctor" grants nothing | — |
+### Setup (about five minutes)
 
-The AUTHORISATION layer is completely untouched and still enforced on every request
-(§2b). It is separating *claimed* identities rather than *verified* ones.
+1. <https://console.cloud.google.com> → create (or pick) a project. No billing needed.
+2. **APIs & Services → OAuth consent screen** → User type **External** → app name,
+   support email, developer email → Save. Scopes: leave the defaults (`openid`, `email`,
+   `profile` need no review). While the app is in **Testing**, add the Google accounts
+   that may sign in under *Test users* (up to 100); **Publish app** to open it to anyone.
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID** → type
+   **Web application** → *Authorised JavaScript origins*: `http://localhost:3000`,
+   `http://127.0.0.1:3000`, and your deployed frontend origin. No redirect URI is needed
+   (the button uses a popup).
+4. Copy the **Client ID** (`…apps.googleusercontent.com`) into
+   * `.env` → `GOOGLE_CLIENT_ID=…`
+   * `web/.env.local` → `NEXT_PUBLIC_GOOGLE_CLIENT_ID=…` (optional; without it the page
+     asks the API via `GET /v1/auth/config`)
+5. `.env` → `ADMIN_EMAILS=you@gmail.com` so you can approve doctors. Restart API and web.
 
-Restoring verification means putting one check in front of `service.sign_in()`. Nothing
-else in the auth package would change — that is why the session, role and ownership
-machinery was kept rather than torn out.
+There is **no client secret** in this flow. The client ID is public by design.
 
-### Why the number is still asked for
+### What the API checks
 
-It is not a login credential; it is the record key and the delivery address:
+`google-auth` verifies the token's signature against Google's published certificates,
+its issuer, its expiry and that its **audience is our client ID** (a token Google minted
+for another app is refused). We then require `email_verified`. The email and Google
+user id are read from the verified token only — the request body cannot name them.
 
-* it owns the screening history and the Eye Health Passport timeline,
-* it is the WhatsApp number the report is sent to (`Account.mobile`, never a field in
-  the request body — see §6),
-* it is what an administrator approves a doctor against.
+The account key is Google's stable user id (`google_sub`), not the email, so a renamed
+Gmail address stays the same account.
 
-Removing verification did not remove identity.
+## 1. The WhatsApp number — optional, and not identity
+
+Sign-in no longer uses a phone number. `Account.mobile` survives only as the **WhatsApp
+delivery address**, set by the person themselves:
+
+* at signup (optional field), or
+* later, from the delivery card on the result page (`PUT /v1/auth/me/whatsapp`).
+
+With no number saved, every WhatsApp send answers `409 no_whatsapp_number` and the UI
+offers to add one. The endpoint only ever changes the caller's own record.
+
+**The number is not verified.** Someone could type a number that is not theirs; the
+only thing it can receive is *their own* report. Re-adding OTP for this one field
+would close that, if it matters for a deployment.
 
 ### What was removed
 
-Firebase Phone Auth, httpSMS, Twilio Verify, the console/local/memory/webhook OTP
-providers, `src/auth/otp.py`, `src/auth/verification.py`, `src/auth/sms.py`, and every
-`AUTH_PROVIDER` / `OTP_*` / `FIREBASE_*` / `HTTPSMS_*` / `TWILIO_VERIFY_SERVICE_SID`
-environment variable.
+Mobile-number sign-in, the OTP flow (`src/auth/otp.py`, `/v1/auth/otp/request`,
+`/v1/auth/sign-in`, `web/components/OtpStep.tsx`, `tests/test_otp.py`) and its
+`OTP_*` / `SMS_GATEWAY_*` / `ADMIN_MOBILES` settings.
 
-`TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` are **kept** — they belong to the WhatsApp
-delivery provider, not to sign-in.
+`TWILIO_*` and `META_WHATSAPP_*` are **kept** — they belong to WhatsApp report
+delivery, not to sign-in.
 
 ---
 
@@ -77,7 +93,7 @@ The two routes into it are:
 | `POST /v1/auth/admin/doctors/{id}/verify` | an account whose stored role is `admin` |
 | `scripts/approve_doctor.py` | whoever has write access to the server's account store |
 
-Admin accounts come from `ADMIN_MOBILES`, an allow-list held in the deployment
+Admin accounts come from `ADMIN_EMAILS`, an allow-list held in the deployment
 environment. A signup form cannot request the admin role: `LocalAuthStore.create`
 coerces anything that is not `user` or `doctor` down to `user`.
 
@@ -161,20 +177,25 @@ there, and fails closed: an unknown scan, an unowned scan or a lookup error all 
 ## 3. Sign-in, end to end
 
 ```
-POST /v1/auth/sign-in   {"mobile": "+91...", "intent": "login"|"signup",
-                         "role": "user"|"doctor", "doctor_profile": {...}}
+POST /v1/auth/google   {"credential": "<Google ID token>", "intent": "login"|"signup",
+                        "role": "user"|"doctor", "doctor_profile": {...}, "mobile": "+91..."?}
 ```
 
-`src/auth/service.py::sign_in` normalises the number to E.164, finds or creates the
-account, refuses a SUSPENDED one, and mints a session token. There is no second call.
+`src/auth/service.py::sign_in`:
 
-`intent` is wording only — both values succeed. `role` is a REQUEST, never a grant:
-`storage.create` coerces anything but user/doctor down to user, refuses admin outright,
-and creates every doctor with `doctor_verified = false`. See §2.
+| Situation | Result |
+|---|---|
+| Existing Google account | signed in with its **stored** role; the toggle is ignored |
+| New account, Patient (login or signup) | patient account created |
+| New account, Doctor, **signup** | doctor account created, `doctor_verified=false` |
+| New account, Doctor, **login** | `404 doctor_signup_required` — the UI links to doctor signup, which collects the registration details |
+| Suspended account | `403 account_suspended` |
 
-The response is the same shape the old `/verify-otp` returned, which is why `Guard`, the
-session token, the role system and every protected endpoint were untouched by this
-change.
+`role` is a REQUEST, never a grant: `storage.create` coerces anything but user/doctor
+down to user, admin comes only from `ADMIN_EMAILS`, and every doctor is created
+unverified. See §2. The response shape (`token`, `account`, `next`,
+`doctor_verification_pending`) is unchanged, so `Guard`, the role system and every
+protected endpoint are untouched.
 
 ---
 
@@ -262,7 +283,7 @@ did the model say, what did the human say, and when?"
 
 | File | Holds |
 |---|---|
-| `data/interim/auth/accounts.json` | account id, mobile, role, `doctor_verified`, status, created/last-login timestamps, and for doctors the claimed credentials |
+| `data/interim/auth/accounts.json` | account id, Google user id, email, name, picture URL, optional WhatsApp number, role, `doctor_verified`, status, created/last-login timestamps, and for doctors the claimed credentials |
 | `data/interim/auth/revoked_sessions.json` | logged-out token ids until their natural expiry |
 | `data/interim/scans.json` | the existing scan summaries (unchanged) |
 | `data/interim/scan_evidence/{scan_id}.json` | full evidence per scan, so a doctor can reopen it |
@@ -279,27 +300,24 @@ See `.env.example` at the repo root for the annotated list.
 
 **Backend** (`.env`, git-ignored) — never sent to the browser:
 
-**Sign-in needs no configuration at all.** There is no provider to select and no
-credential to supply.
-
 | Variable | Meaning |
 |---|---|
 | `AUTH_SECRET` | signs session tokens, Eye Health Passport share codes and the short-lived report media URLs. **Required in production**; the API refuses to start without it |
-| `ADMIN_MOBILES` | comma-separated allow-list provisioned as `admin` on first sign-in. The bootstrap for "someone has to approve the first doctor" |
+| `GOOGLE_CLIENT_ID` | OAuth Web client ID; the expected `aud` of every Google ID token. **Required in production**; the API refuses to start without it |
+| `ADMIN_EMAILS` | comma-separated Google emails provisioned as `admin` on first sign-in. The bootstrap for "someone has to approve the first doctor" |
 | `AUTH_PROTECT_ANALYZE` | whether `/v1/analyze` needs a session. On by default |
 
-**Removed with the verification step:** `AUTH_PROVIDER`, `OTP_PROVIDER`, `OTP_MODE`,
-`OTP_LENGTH`, `OTP_TTL_SECONDS`, `OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN_SECONDS`,
-`OTP_MAX_SENDS_PER_WINDOW`, `TWILIO_VERIFY_SERVICE_SID`, `TWILIO_CODE_TTL_SECONDS`,
-every `FIREBASE_*` and every `HTTPSMS_*`.
+**Removed with Google sign-in:** every `OTP_*`, every `SMS_GATEWAY_*`, and
+`ADMIN_MOBILES`.
 
 **Deliberately kept:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and
 `TWILIO_WHATSAPP_FROM` are the WhatsApp delivery provider's credentials, not sign-in's
 (`src/delivery/providers/twilio.py`). Deleting them would have broken report delivery.
 
-**Frontend** (`web/.env.local`) — `NEXT_PUBLIC_API_BASE`, and nothing else. Anything
-prefixed `NEXT_PUBLIC_` is compiled into the JavaScript bundle and readable by every
-visitor, so no credential of any kind belongs there.
+**Frontend** (`web/.env.local`) — `NEXT_PUBLIC_API_BASE` and, optionally,
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` (public by design). Anything prefixed `NEXT_PUBLIC_` is
+compiled into the JavaScript bundle and readable by every visitor, so no secret of any
+kind belongs there.
 Next.js reads `web/.env.local` at server **start**; restart `make web` after editing it.
 
 ---
@@ -316,15 +334,13 @@ Honest list. None of these are hidden by the prototype.
    API instances, and Cloud Run will run several. Accounts belong in Firestore or
    Postgres before any real traffic; `LocalAuthStore` is deliberately a small interface
    so that swap is contained.
-3. **Rate limiting is per mobile number, in the same JSON store.** It does not limit by
-   IP and does not coordinate across instances, so it slows an attacker down rather than
-   stopping a distributed one. Put a real rate limiter (API gateway, Redis) in front.
+3. **No rate limiting on sign-in.** Google does the credential check, but the API still
+   accepts any number of token submissions. Put a real rate limiter (API gateway, Redis)
+   in front.
 4. **Doctor verification is a human decision recorded by hand.** There is no registry
    lookup, no document upload, no proof of identity.
-5. **No SMS provider is connected.** `webhook` is a shape, not an integration; a real
-   vendor needs its own client, delivery receipts, and DLT template registration for
-   Indian transactional SMS.
-6. **No account recovery, no number change, no deletion flow**, and no consent record —
+5. **The WhatsApp number is unverified.** See §1.
+6. **No self-service account deletion** (only `scripts/manage_account.py`), and no consent record —
    all of which a real deployment handling patient data needs under the DPDP Act.
 7. **The evidence store keeps retinal images on local disk unencrypted.** Fine for a
    demo; a deployment needs encryption at rest, a retention policy, and a lawful basis

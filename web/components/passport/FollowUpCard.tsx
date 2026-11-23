@@ -11,6 +11,7 @@
  * table, and when one is in force the card says so rather than presenting it as the
  * system's own idea.
  */
+import { Bell, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { sendFollowUpReminder, shortDate, type FollowUp } from "@/lib/passport";
 import { errorKey } from "@/lib/whatsapp";
@@ -104,11 +105,11 @@ export default function FollowUpCard({ followUp, canRemind = true }: {
           >
             {phase === "sending"
               ? <><span className="spin" aria-hidden="true" /> {t("passport.followUpSending")}</>
-              : <><span aria-hidden="true">🔔</span> {t("passport.followUpSendReminder")}</>}
+              : <><span aria-hidden="true"><Bell className="ico" size={16} strokeWidth={1.75} /></span> {t("passport.followUpSendReminder")}</>}
           </button>
           <p id="pp-fu-status" className="cb-note" role="status" aria-live="polite">
             {phase === "error"
-              ? <span className="cb-waerror">⚠ {t(errorKey(code))}</span>
+              ? <span className="cb-waerror"><TriangleAlert className="ico" size={16} strokeWidth={1.75} /> {t(errorKey(code))}</span>
               : reminded
                 ? t("passport.followUpReminderSent")
                 : followUp.reminder_status === "failed"

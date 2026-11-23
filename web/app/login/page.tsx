@@ -1,31 +1,31 @@
 "use client";
 /**
- * Sign in with a mobile number. That is the whole of it.
+ * Sign in with Google, as a Patient or a Doctor.
  *
- * There is no code, no password and no verification step: the number is taken as
- * CLAIMED. The screen says so, because a person handing over a phone number on a
- * medical site is entitled to know what it does and does not protect.
- *
- * The number is still asked for, and still matters: it is the account identity that
- * owns this person's screening history, their Eye Health Passport and the WhatsApp
- * number their report is delivered to. Removing verification did not remove identity.
+ * The toggle is a REQUEST, not a grant. An existing account signs in with the role it
+ * already has, whatever is selected here; a new Google account selecting "Patient" gets
+ * a patient account, and one selecting "Doctor" is sent to signup, because a doctor
+ * account needs registration details an administrator can check.
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AuthLayout, FieldLabel } from "@/components/AuthCard";
+import { AuthLayout, RoleToggle } from "@/components/AuthCard";
 import { useAuth } from "@/components/AuthProvider";
 import { useCareBridge } from "@/components/carebridge/CareBridgeProvider";
-import { normaliseMobile, signIn, signInErrorMessage } from "@/lib/auth";
+import GoogleButton from "@/components/GoogleButton";
+import { signInErrorMessage, signInWithGoogle } from "@/lib/auth";
+
+type Role = "user" | "doctor";
 
 export default function LoginPage() {
   const router = useRouter();
   const { refresh, authenticated, account } = useAuth();
   const { t } = useCareBridge();
 
-  const [mobile, setMobile] = useState("");
+  const [role, setRole] = useState<Role>("user");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ code?: string; text: string } | null>(null);
 
   // Already signed in? Don't make them do it again.
   useEffect(() => {
@@ -34,23 +34,17 @@ export default function LoginPage() {
     }
   }, [authenticated, account, router]);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onCredential = async (credential: string) => {
     setError(null);
-    const m = normaliseMobile(mobile);
-    if (!m) {
-      setError("Enter a 10-digit mobile number.");
-      return;
-    }
     setBusy(true);
     try {
       // `next` is computed by the BACKEND from the stored role. The browser does not
       // decide where a doctor lands, because the browser does not decide who is one.
-      const r = await signIn({ mobile: m, intent: "login" });
+      const r = await signInWithGoogle({ credential, intent: "login", role });
       await refresh();
       router.replace(r.next || "/screen");
     } catch (err: any) {
-      setError(signInErrorMessage(err));
+      setError({ code: err?.code, text: signInErrorMessage(err) });
     } finally {
       setBusy(false);
     }
@@ -62,38 +56,33 @@ export default function LoginPage() {
       subtitle={t("auth.signInSub")}
       footer={
         <>
-          Don’t have an account? <Link href="/signup">Create Account</Link>
+          Don’t have an account? <Link href={`/signup?role=${role}`}>Create Account</Link>
         </>
       }
     >
-      {error && <div className="err" style={{ marginBottom: 14 }}>{error}</div>}
+      {error && (
+        <div className="err" style={{ marginBottom: 14 }}>
+          {error.text}
+          {error.code === "doctor_signup_required" && (
+            <> <Link href="/signup?role=doctor">Create a doctor account</Link></>
+          )}
+        </div>
+      )}
 
-      <form onSubmit={submit}>
-        <label className="field">
-          <FieldLabel>Mobile Number</FieldLabel>
-          <div className="mobileinput">
-            <span className="cc">+91</span>
-            <input
-              autoFocus
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              placeholder="98765 43210"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-            />
-          </div>
-        </label>
-        <button className="primary bigbtn" type="submit" disabled={busy}>
-          {busy ? <><span className="spin" /> Signing in…</> : "Continue"}
-        </button>
-      </form>
+      <RoleToggle role={role} onChange={(r) => { setRole(r); setError(null); }} />
 
-      {/* Stated on the screen rather than buried in a doc. */}
-      <p className="cb-note" style={{ marginTop: 16 }}>
-        This build does not verify your number — there is no code to enter. Your number
-        identifies your records and is where your report is sent.
+      <p className="cb-note" style={{ margin: "14px 0" }}>
+        {role === "doctor"
+          ? "Doctors see the report queue once a programme administrator has verified their registration."
+          : "Screen retinal images and see your own results and history."}
       </p>
+
+      <GoogleButton onCredential={onCredential} text="signin_with" disabled={busy} />
+      {busy && (
+        <p className="muted" style={{ textAlign: "center", marginTop: 10 }}>
+          <span className="spin" /> Signing you in…
+        </p>
+      )}
     </AuthLayout>
   );
 }

@@ -63,7 +63,7 @@ _STATUS = {
     "rate_limited": 429, "invalid_recipient": 400, "recipient_not_reachable": 400,
     "recipient_opted_out": 400, "recipient_not_allowed": 503,
     "sender_not_whatsapp": 503, "session_window_closed": 409,
-    "comparison_not_available": 409,
+    "comparison_not_available": 409, "no_whatsapp_number": 409,
 }
 
 # One send at a time per comparison, per process — the cheap half of duplicate
@@ -193,6 +193,12 @@ def send_comparison_on_whatsapp(screening_id: str, body: ComparisonSendIn,
                     "status": previous.get("status"),
                     "sent_at": previous.get("sent_at"), "duplicate": True}
 
+        if not account.mobile:
+            # Sign-in is Google now, so a WhatsApp number is optional and set by the
+            # person. No number -> nothing to send to; say so rather than guess.
+            return _fail("no_whatsapp_number",
+                         "Add your WhatsApp number to receive reports on WhatsApp.")
+
         service = get_whatsapp_service()
         ok, why = service.configured()
         if not ok:
@@ -278,6 +284,12 @@ def send_reminder(follow_up_id: str, body: ComparisonSendIn,
         return _fail("report_not_ready",
                      "The report for this screening is no longer available.")
     media_id, filename = attachment
+
+    if not account.mobile:
+        passport_service.mark_reminder(follow_up_id, status="failed",
+                                       detail="no_whatsapp_number")
+        return _fail("no_whatsapp_number",
+                     "Add your WhatsApp number to receive reminders on WhatsApp.")
 
     service = get_whatsapp_service()
     ok, why = service.configured()

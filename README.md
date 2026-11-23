@@ -29,7 +29,8 @@ folder rename that unblocks the entire frontend.
 make setup                 # venv + npm install
 make synth                 # generate test images
 cp .env.example .env       # API settings; the defaults are fine for local work
-make api                   # http://localhost:8080
+make api                   # http://localhost:8080  (port busy? make api API_PORT=8081
+                           #  and set NEXT_PUBLIC_API_BASE to match in web/.env.local)
 make web                   # http://localhost:3000   (see BLOCKERS.md #1 first)
 make test                  # backend + translation-integrity tests
 make web-test              # frontend tests (CareBridge)
@@ -41,35 +42,34 @@ make smoke                 # end-to-end: expects 401; add TOKEN=... for the 200/
 > fails with `Cannot find module './NNN.js'`. Use `make web-build`, which refuses to run
 > while a dev server is live. To recover: `pkill -f 'next dev' && rm -rf web/.next && make web`.
 
-The app has **no login step**. Open <http://localhost:3000/login>, type any mobile
-number, and you are in — there is no code to enter, no password and no SMS provider.
+Sign-in is **Sign in with Google** (free). Set `GOOGLE_CLIENT_ID` once — the five-minute
+setup is in `docs/AUTH.md` §0 — then open <http://localhost:3000/login>, choose
+**Patient** or **Doctor**, and continue with Google. No password, no code, no SMS.
 
-The number is still asked for because it is the record key: it owns your screening
-history and your Eye Health Passport, and it is the number your WhatsApp report goes to.
-What it no longer does is prove anything.
+A WhatsApp number is optional: add it at signup or from the result page if you want
+reports sent to WhatsApp.
 
 To try the doctor side:
 
 ```bash
 make doctors                              # list doctor accounts + verification state
-make approve-doctor MOBILE=+919876543210  # approve one
+make approve-doctor EMAIL=doctor@gmail.com  # approve one
 ```
 
 Signing in is free; becoming a **doctor** is not — that still needs an administrator.
 
 ## Signing in
 
-Identity is a **mobile number, taken as claimed**. There are no passwords and no
-one-time codes anywhere in the system. Nothing verifies that the person typing a number
-owns it, so the per-account boundaries below separate *claimed* identities rather than
-verified ones — see `docs/AUTH.md` §1.
+Identity is a **Google account**, verified server-side from Google's signed ID token
+(`src/auth/google.py`). There are no passwords and no one-time codes anywhere in the
+system. See `docs/AUTH.md`.
 
 | Account type | Can do |
 |---|---|
-| **User** | screen images, see their own results and the review queue |
+| **Patient** | screen images, see their own results and the review queue |
 | **Doctor**, unverified | the same; the reports area says "Doctor verification pending." |
 | **Doctor**, verified | the above, plus `/reports`: every screening report, anonymised |
-| **Admin** | approve doctor accounts (`ADMIN_MOBILES` in the environment) |
+| **Admin** | approve doctor accounts (`ADMIN_EMAILS` in the environment) |
 
 Choosing "Doctor Account" at signup **grants nothing**. It creates an account with
 `doctor_verified = false` and files a verification request; only an admin endpoint or the

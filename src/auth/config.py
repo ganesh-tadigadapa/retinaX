@@ -34,20 +34,22 @@ except Exception:                                    # noqa: BLE001
 AUTH_ENV = os.getenv("AUTH_ENV", "development").strip().lower()
 IS_PRODUCTION = AUTH_ENV == "production"
 
-# ------------------------------------------------------------------ sign-in
-# There is no provider, no OTP and no password.
-#
-# `sign_in()` takes a mobile number and opens a session for it. Everything that used to
-# live here — AUTH_PROVIDER, OTP_PROVIDER, OTP_MODE, the Twilio Verify credentials, the
-# httpSMS credentials, the Firebase service account, the OTP policy knobs — was removed
-# with the verification step itself, so there is nothing left to misconfigure.
-#
-# `AUTH_SECRET` below is still load-bearing: it signs the session tokens.
+# ------------------------------------------------------------------ sign-in (Google)
+# The OAuth 2.0 Web client ID from Google Cloud console -> APIs & Services ->
+# Credentials. It is PUBLIC (the browser needs the same value as
+# NEXT_PUBLIC_GOOGLE_CLIENT_ID); it is used here as the expected `aud` of every ID token,
+# which is what stops a token minted for some other app being replayed against ours.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+
+
+def google_enabled() -> bool:
+    return bool(GOOGLE_CLIENT_ID)
+
 
 # ------------------------------------------------------------------ sessions
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", str(12 * 3600)))
 
-# The signing key for session tokens AND the pepper for OTP hashes. In production this
+# The signing key for session tokens. In production this
 # MUST come from the environment; see _guard(). In development we generate an ephemeral
 # one, which means restarting the API invalidates every session — deliberately visible,
 # so nobody ships a hardcoded default key by accident.
@@ -56,12 +58,12 @@ AUTH_SECRET = _env_secret or secrets.token_urlsafe(48)
 AUTH_SECRET_FROM_ENV = bool(_env_secret)
 
 # ------------------------------------------------------------------ authorisation
-# Mobiles that are provisioned as admin (the doctor-verification authority) the first
-# time they authenticate. This is the bootstrap for "someone has to approve the first
-# doctor"; it is an allow-list held by whoever controls the deployment environment, not
-# something a signing-up user can influence.
-ADMIN_MOBILES = tuple(
-    m.strip() for m in os.getenv("ADMIN_MOBILES", "").split(",") if m.strip()
+# Google account emails that are provisioned as admin (the doctor-verification
+# authority) the first time they sign in. This is the bootstrap for "someone has to
+# approve the first doctor"; it is an allow-list held by whoever controls the deployment
+# environment, not something a signing-up user can influence. Compared lower-cased.
+ADMIN_EMAILS = tuple(
+    e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
 )
 
 # Require a valid session for POST /v1/analyze and GET /v1/scans. On by default: the
@@ -88,23 +90,26 @@ STORE_SCAN_EVIDENCE = _flag("STORE_SCAN_EVIDENCE", "1")
 def _guard() -> None:
     """Fail loudly rather than run insecurely.
 
-    One check survives, and it is the one that was never about OTP: a production
-    deployment must supply AUTH_SECRET, or session tokens are signed with a key that
-    changes on every restart.
+    A production deployment must supply AUTH_SECRET (or session tokens are signed with a
+    key that changes on every restart) and GOOGLE_CLIENT_ID (or nobody can sign in).
     """
     if IS_PRODUCTION and not AUTH_SECRET_FROM_ENV:
         raise RuntimeError(
             "AUTH_ENV=production without AUTH_SECRET. Session tokens would be signed "
             "with a key that changes on every restart. Set AUTH_SECRET to a long "
-            "random value held in your secret manager."
-        )
+            "random value held in your secret manager.")
+    if IS_PRODUCTION and not GOOGLE_CLIENT_ID:
+        raise RuntimeError(
+            "AUTH_ENV=production without GOOGLE_CLIENT_ID. Sign-in is Google only; "
+            "without a client ID nobody can sign in.")
     if not AUTH_SECRET_FROM_ENV:
         log.warning(
             "AUTH_SECRET is not set; using an ephemeral key. Sessions will not survive "
             "an API restart.")
-    log.warning(
-        "Sign-in accepts any mobile number without verification — no OTP, no password. "
-        "The number is a claim, not a proof. See src/auth/service.py.")
+    if not GOOGLE_CLIENT_ID:
+        log.warning(
+            "GOOGLE_CLIENT_ID is not set; Sign in with Google will refuse every token. "
+            "See docs/AUTH.md for the five-minute setup.")
 
 
 _guard()

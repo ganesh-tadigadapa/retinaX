@@ -12,17 +12,16 @@ WHY THERE IS NO "CHANGE ROLE" COMMAND
     only through service.approve_doctor(). Adding a role-rewrite here would create
     exactly the escalation path the rest of the design exists to prevent.
 
-    To move a number from a user account to a doctor account, DELETE the account and let
-    the person sign up again choosing "Doctor Account". That re-runs mobile verification
-    and collects the medical registration details, which a silent role flip would skip —
+    To move a person from a user account to a doctor account, DELETE the account and let
+    them sign up again with Google choosing "Doctor Account". That collects the medical registration details, which a silent role flip would skip —
     leaving a "doctor" with no credentials on file and nothing for an administrator to
     check.
 
 USAGE
     scripts/manage_account.py --list
-    scripts/manage_account.py --show +919876543210
-    scripts/manage_account.py --delete +919876543210
-    scripts/manage_account.py --delete +919876543210 --yes     # skip the prompt
+    scripts/manage_account.py --show someone@gmail.com
+    scripts/manage_account.py --delete someone@gmail.com
+    scripts/manage_account.py --delete someone@gmail.com --yes     # skip the prompt
 
 WHAT DELETING DOES NOT TOUCH
     Screening data. Scans, evidence and clinician reviews are stored separately and hold
@@ -39,20 +38,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse  # noqa: E402
 import json  # noqa: E402
 
-from src.auth.models import mask_mobile, normalise_mobile  # noqa: E402
+from src.auth.models import mask_mobile  # noqa: E402
 from src.auth.storage import get_auth_store  # noqa: E402
-
-
-def _rows(store):
-    return json.loads((store.dir / "accounts.json").read_text())
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--list", action="store_true", help="list every account")
-    ap.add_argument("--show", metavar="MOBILE", help="show one account in full")
-    ap.add_argument("--delete", metavar="MOBILE", help="permanently delete one account")
+    ap.add_argument("--show", metavar="EMAIL", help="show one account in full")
+    ap.add_argument("--delete", metavar="EMAIL", help="permanently delete one account")
     ap.add_argument("--yes", action="store_true", help="do not prompt for confirmation")
     args = ap.parse_args()
 
@@ -63,34 +58,28 @@ def main() -> int:
         if not accs:
             print(f"No accounts. (store: {store.dir})")
             return 0
-        print(f"{'ACCOUNT ID':<24}{'MOBILE':<20}{'ROLE':<9}{'DOCTOR OK':<11}CREATED")
+        print(f"{'ACCOUNT ID':<24}{'EMAIL':<32}{'ROLE':<9}{'DOCTOR OK':<11}CREATED")
         for a in accs:
-            print(f"{a.account_id:<24}{mask_mobile(a.mobile):<20}{a.role:<9}"
+            print(f"{a.account_id:<24}{a.email:<32}{a.role:<9}"
                   f"{str(a.doctor_verified):<11}{a.created_at[:19]}")
         return 0
 
-    target = args.show or args.delete
-    try:
-        mobile = normalise_mobile(target)
-    except ValueError as e:
-        print(f"error: {e}", file=sys.stderr)
-        return 1
-
-    acc = store.get_by_mobile(mobile)
+    target = (args.show or args.delete).strip().lower()
+    acc = store.get_by_email(target)
     if acc is None:
-        print(f"No account for {mask_mobile(mobile)}", file=sys.stderr)
+        print(f"No account for {target}", file=sys.stderr)
         return 1
 
     if args.show:
         d = acc.to_record()
-        d["mobile"] = mask_mobile(d["mobile"])      # never print the full number
+        d["mobile"] = mask_mobile(d.get("mobile"))  # never print the full number
         print(json.dumps(d, indent=2))
         return 0
 
     # ---- delete -------------------------------------------------------------
     print(f"About to permanently delete:")
     print(f"  account   {acc.account_id}")
-    print(f"  mobile    {mask_mobile(acc.mobile)}")
+    print(f"  email     {acc.email}")
     print(f"  role      {acc.role}  (doctor_verified={acc.doctor_verified})")
     print(f"  created   {acc.created_at}")
     print("\nScans, evidence and clinician reviews are NOT affected.")
@@ -104,12 +93,10 @@ def main() -> int:
             print("\naborted.")
             return 1
 
-    rows = [r for r in _rows(store) if r.get("account_id") != acc.account_id]
-    (store.dir / "accounts.json").write_text(json.dumps(rows, indent=2))
-    store.drop_challenge(mobile)                    # any pending OTP goes too
+    store.delete(acc.account_id)
 
     print(f"\nDeleted {acc.account_id}.")
-    print(f"{mask_mobile(mobile)} can now sign up again and choose an account type.")
+    print(f"{acc.email} can now sign up again and choose an account type.")
     return 0
 
 

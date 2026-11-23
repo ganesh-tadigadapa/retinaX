@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import PageHeader from "@/components/PageHeader";
 
 const DECISIONS = [
   {
@@ -36,13 +37,10 @@ const DECISIONS = [
 export default function HowItWorks() {
   return (
     <Shell>
-      <section className="hero" style={{ paddingBlock: "26px 24px" }}>
-        <h2>How it works</h2>
-        <p className="lede">
-          The decisions worth defending, and the reasoning behind each. Several of these
-          were changed after measurement contradicted the obvious choice.
-        </p>
-      </section>
+      <PageHeader eyebrow="Learn" title="How it works">
+        The decisions worth defending, and the reasoning behind each. Several of these
+        were changed after measurement contradicted the obvious choice.
+      </PageHeader>
 
       <section className="band">
         <h3>Pipeline</h3>

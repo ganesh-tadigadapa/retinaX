@@ -48,6 +48,7 @@ export const te: Translations = {
     limitations: "పరిమితులు",
     carebridge: "CareBridge",
     passport: "పాస్‌పోర్ట్",
+    hospitals: "కంటి ఆసుపత్రులు",
     login: "లాగిన్",
     signup: "ఖాతా సృష్టించండి",
     logout: "లాగౌట్",
@@ -86,16 +87,18 @@ export const te: Translations = {
 
   auth: {
     signInTitle: "సైన్ ఇన్ చేయండి",
-    signInSub: "మీ మొబైల్ నంబర్ ఇవ్వండి. మేము ఒకసారి వాడే కోడ్ పంపుతాం.",
+    signInSub: "Googleతో కొనసాగండి. మీరు రోగిగా లేదా వైద్యుడిగా సైన్ ఇన్ చేస్తున్నారో ఎంచుకోండి.",
     createTitle: "ఖాతా సృష్టించండి",
-    createSub: "పరీక్షకు ధృవీకరించిన మొబైల్ నంబర్ అవసరం. పాస్‌వర్డ్ లేదు.",
-    mobileLabel: "మొబైల్ నంబర్",
-    otpPrompt: "మేము పంపిన కోడ్‌ను ఇక్కడ నమోదు చేయండి.",
-    noPassword: "మీ ఖాతాకు పాస్‌వర్డ్ ఎప్పుడూ నిల్వ చేయబడదు.",
+    createSub: "Googleతో మీ ఖాతా సృష్టించండి. గుర్తుంచుకోవాల్సిన పాస్‌వర్డ్ లేదు.",
+    mobileLabel: "WhatsApp నంబర్ (ఐచ్ఛికం)",
+    whatsappHint: "మీ నివేదికలను WhatsAppలో పంపడానికి మాత్రమే. దీన్ని తర్వాత జోడించవచ్చు లేదా మార్చవచ్చు.",
+    noPassword: "ఏ పాస్‌వర్డ్ నిల్వ చేయబడదు — మీరు ఎవరో Google నిర్ధారిస్తుంది.",
     languageStays: "భాష మార్చినందుకు మీరు సైన్ అవుట్ కారు.",
   },
 
   screen: {
+    resultBelow: "మీ ఫలితం క్రింద సిద్ధంగా ఉంది",
+    screenAnother: "మరో చిత్రాన్ని పరీక్షించండి",
     title: "రెటినా చిత్రాన్ని పరీక్షించండి",
     subtitle: "కంటి వెనుక భాగం ఫొటో ఒకటి అప్‌లోడ్ చేయండి. ఫలితాలు కొన్ని సెకన్లలో వస్తాయి.",
     upload: "ఫండస్ ఫొటో అప్‌లోడ్ చేయండి",
@@ -115,6 +118,9 @@ export const te: Translations = {
   },
 
   quality: {
+    notFundusTitle: "ఇది రెటీనా ఫోటో కాదు",
+    notFundusWhy: "కంటి వెనుక భాగం (ఫండస్) ఫోటోను మాత్రమే పరీక్షించగలం. ఈ చిత్రం అలా కనిపించడం లేదు, కాబట్టి దీనికి గ్రేడ్ ఇవ్వలేదు.",
+    notFundusWhatToDo: "ఫండస్ ఫోటోను అప్‌లోడ్ చేయండి: చీకటి నేపథ్యంపై రెటీనా యొక్క గుండ్రని, నారింజ-ఎరుపు చిత్రం, ఫండస్ కెమెరా లేదా స్మార్ట్‌ఫోన్ ఫండస్ అడాప్టర్‌తో తీసినది.",
     failTitle: "ఫొటో తగినంత స్పష్టంగా లేదు",
     whyTitle: "ఎందుకు?",
     whyBody:
@@ -136,6 +142,9 @@ export const te: Translations = {
   },
 
   result: {
+    tabCare: "సిఫార్సు చేసిన సంరక్షణ",
+    tabMeaning: "దీని అర్థం ఏమిటి",
+    tabInsights: "AI విశ్లేషణ",
     eyebrow: "మీ పరీక్ష ఫలితం",
     title: "మీ పరీక్ష ఫలితం",
     gradeWord: "గ్రేడ్",
@@ -171,6 +180,8 @@ export const te: Translations = {
     clinicalOpen: "వైద్య వివరాలు చూపండి",
     clinicalClose: "వైద్య వివరాలు దాచండి",
     confidence: "నమ్మకం",
+    referralConfidence: "రిఫరల్ నమ్మకం",
+    exactGradeConfidence: "ఖచ్చితమైన గ్రేడ్",
     confidenceNote:
       "నమ్మకం అంటే తాను చెప్పిన గ్రేడ్‌పై సిస్టమ్‌కు ఎంత ఖచ్చితత్వం ఉందో — మీకు వ్యాధి ఉన్న సంభావ్యత కాదు.",
     calibrated: "క్రమాంకనం చేయబడింది",
@@ -221,15 +232,18 @@ export const te: Translations = {
     readyTitle: "మీ స్క్రీనింగ్ రిపోర్ట్ సిద్ధంగా ఉంది",
     readyBody: "మీ వివరమైన కేర్‌బ్రిడ్జ్ రిపోర్ట్ విజయవంతంగా తయారైంది.",
     channelLabel: "వాట్సాప్‌లో పంపడం",
-    verifiedNumberIntro: "ఈ నివేదికను మీ ధృవీకరించిన వాట్సాప్ నంబర్‌కు పంపండి:",
+    verifiedNumberIntro: "ఈ నివేదికను మీ WhatsApp నంబర్‌కు పంపండి:",
     send: "వాట్సాప్‌లో రిపోర్ట్ పంపండి",
     sending: "రిపోర్ట్ పంపుతున్నాము…",
     sentShort: "రిపోర్ట్ వాట్సాప్‌కు పంపబడింది",
     queuedShort: "వాట్సాప్ సందేశం పంపడానికి క్యూలో ఉంది",
     failedShort: "రిపోర్ట్ పంపలేకపోయాము",
     retry: "మళ్ళీ ప్రయత్నించండి",
-    explain: "మీ పీడీఎఫ్ మీరు నమోదు చేసిన వాట్సాప్ నంబర్‌కు పంపబడుతుంది.",
-    registeredNote: "మీరు సైన్ ఇన్ చేసిన నంబర్‌నే ఉపయోగిస్తాము. దాన్ని మళ్ళీ టైప్ చేయవలసిన అవసరం లేదు.",
+    explain: "మీ PDF మీ ఖాతాలో సేవ్ చేసిన WhatsApp నంబర్‌కు పంపబడుతుంది.",
+    registeredNote: "ఇది మీ ఖాతాలో సేవ్ చేసిన WhatsApp నంబర్.",
+    addNumberIntro: "ఈ నివేదికను మీ ఫోన్‌లో పొందడానికి మీ WhatsApp నంబర్ జోడించండి.",
+    saveNumber: "నంబర్ సేవ్ చేయండి",
+    invalidNumber: "10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.",
     successTitle: "రిపోర్ట్ విజయవంతంగా పంపబడింది",
     successBody: "మీ స్క్రీనింగ్ రిపోర్ట్ ఇక్కడికి పంపబడింది:",
     successHint: "పీడీఎఫ్ చూడటానికి వాట్సాప్ తెరవండి.",
@@ -252,6 +266,7 @@ export const te: Translations = {
       unreachable: "సందేశ సేవను చేరుకోలేకపోయాము. మళ్ళీ ప్రయత్నించండి.",
       reportMissing: "ఈ రిపోర్ట్ ఇప్పుడు పంపడానికి అందుబాటులో లేదు.",
       alreadySending: "ఈ రిపోర్ట్ ఇప్పటికే పంపబడుతోంది.",
+      noNumber: "ముందుగా మీ WhatsApp నంబర్ జోడించండి.",
       generic: "వాట్సాప్‌లో రిపోర్ట్ పంపలేకపోయాము.",
     },
   },
@@ -261,6 +276,16 @@ export const te: Translations = {
   // Every sentence here talks about the SCREENING RESULT, never about the disease —
   // the same rule src/passport/comparison.py enforces on the backend.
   passport: {
+    overviewTitle: "సారాంశం",
+    overviewSubtitle: "మీ కంటి ఆరోగ్యం ఒక్క చూపులో.",
+    statTotal: "మొత్తం స్క్రీనింగ్‌లు",
+    statAttention: "శ్రద్ధ అవసరం",
+    statNormal: "సాధారణం / స్వల్పం",
+    statLast: "చివరి స్క్రీనింగ్",
+    recentTitle: "ఇటీవలి ఫలితాలు",
+    newScreening: "కొత్త స్క్రీనింగ్",
+    viewReport: "నివేదిక చూడండి",
+    notGraded: "గ్రేడ్ చేయలేదు",
     eyebrow: "ఐ హెల్త్ పాస్‌పోర్ట్",
     title: "మీ ఐ హెల్త్ పాస్‌పోర్ట్",
     subtitle: "మీరు చేయించుకున్న ప్రతి స్క్రీనింగ్, మరియు వాటి మధ్య ఏమి మారిందో.",
@@ -451,6 +476,7 @@ export const te: Translations = {
 
     distanceKm: "{km} కి.మీ. దూరంలో",
     distanceM: "{metres} మీటర్ల దూరంలో",
+    openFreeMap: "మ్యాప్‌లో కంటి ఆసుపత్రులను కనుగొనండి",
     setupLabel: "సెటప్ కావాలి",
     distanceFromYou: "మీ స్థానం నుండి దూరం",
     distanceFromArea: "{area} నుండి దూరం",
@@ -543,6 +569,16 @@ export const te: Translations = {
     doctorAdded: "ఈ రోగి చరిత్ర ఇప్పుడు మీకు అందుబాటులో ఉంది.",
     doctorNoPatients:
       "ఇంకా ఏ రోగీ తమ రికార్డును మీతో పంచుకోలేదు. తమ Eye Health Passport నుండి పంచుకునే కోడ్ సృష్టించమని రోగిని అడగండి.",
+  },
+  shareWa: {
+    eyebrow: "షేర్ చేయండి",
+    title: "ఈ నివేదికను WhatsAppలో పంపండి",
+    body: "PDFను మీకే, కుటుంబ సభ్యులకు లేదా మీ డాక్టర్‌కు పంపండి.",
+    button: "WhatsAppలో షేర్ చేయండి",
+    opening: "తెరుస్తోంది…",
+    desktopNote: "ఈ పరికరంలో PDF డౌన్‌లోడ్ అవుతుంది, WhatsApp తెరుచుకుంటుంది — డౌన్‌లోడ్ అయిన ఫైల్‌ను మీ చాట్‌లో జత చేయండి.",
+    message: "నా RETINEX కంటి పరీక్ష నివేదిక జత చేయబడింది (స్కాన్ {ref}).",
+    failed: "షేర్ చేయడం తెరవలేకపోయాం. “నివేదిక డౌన్‌లోడ్ చేయండి” ఉపయోగించండి.",
   },
   why: {
     label: "ఇది నాకు ఎందుకు కనిపిస్తోంది?",

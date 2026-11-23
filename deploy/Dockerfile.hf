@@ -1,13 +1,13 @@
-# Hugging Face Spaces image for the inference API.
+# Hugging Face Spaces image for the inference API (Docker SDK, port 7860).
 #
-# WHY HUGGING FACE AND NOT RENDER/CLOUD RUN
-#   MEASURED on this machine: the API holds 1021 MB RSS after one inference (TensorFlow
-#   runtime plus the 234 MB EfficientNetV2-S model). Render's free tier gives 512 MB, so
-#   it would OOM on the first upload -- the exact moment a judge is watching.
-#   Hugging Face Spaces CPU-basic is free and gives 16 GB RAM and 2 vCPU, with no card
-#   required. It is built for exactly this: a public demo of a model.
+# WHY HUGGING FACE AND NOT RENDER FREE
+#   MEASURED: the API holds ~1 GB RSS after one inference (TensorFlow + the 234 MB
+#   EfficientNetV2-S model). Render/Koyeb free give 512 MB and would OOM on the first
+#   upload. Spaces CPU-basic gives 16 GB RAM / 2 vCPU.
 #
-# Spaces requires the app to listen on port 7860.
+# Spaces run the container as uid 1000, so everything the API writes (accounts, scans,
+# passport, report PDFs) goes under /app/data, owned by that user. That disk is
+# EPHEMERAL: it is wiped when the Space restarts. Durable storage is a separate step.
 
 FROM python:3.11-slim
 
@@ -15,22 +15,27 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     TF_CPP_MIN_LOG_LEVEL=3 \
     OMP_NUM_THREADS=2 \
-    DR_MODEL_DIR=/app/artifacts/model
+    DR_MODEL_DIR=/app/artifacts/model \
+    HOME=/home/user
 
-# opencv-python-headless still needs libgl/libglib at runtime
+# opencv-python-headless still needs libglib/libgomp at runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libglib2.0-0 libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m -u 1000 user
 WORKDIR /app
 
 COPY requirements-serve.txt .
 RUN pip install --no-cache-dir -r requirements-serve.txt
 
-COPY src/ ./src/
-COPY artifacts/model/ ./artifacts/model/
-COPY results/quality_gate/thresholds.json ./results/quality_gate/thresholds.json
-COPY results/active/ ./results/active/
+COPY --chown=user src/ ./src/
+COPY --chown=user artifacts/model/ ./artifacts/model/
+COPY --chown=user results/quality_gate/thresholds.json ./results/quality_gate/thresholds.json
+COPY --chown=user results/active/ ./results/active/
+
+RUN mkdir -p /app/data/interim && chown -R user:user /app/data
+USER user
 
 EXPOSE 7860
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "7860"]

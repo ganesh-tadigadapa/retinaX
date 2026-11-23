@@ -12,12 +12,12 @@
  *      screen → understand → report → WhatsApp
  *
  * The report does not stay trapped inside a website the patient may never open again; it
- * arrives on the phone they already have, at the number they already proved is theirs.
+ * arrives on the phone they already have, at the WhatsApp number saved on their account.
  *
  * Three rules this component keeps:
  *
  *   1. **The patient never types their number.** The recipient is the authenticated
- *      account's registered mobile, derived server-side. This component only ever sees
+ *      account's saved WhatsApp number, derived server-side. This component only ever sees
  *      the MASKED form, and only to show it back.
  *   2. **Success is never assumed.** The success state renders only after the backend
  *      confirms Twilio accepted the message. There is no optimistic update and no local
@@ -25,9 +25,11 @@
  *   3. **Failure costs nothing.** WhatsApp is an optional channel. Every failure leaves
  *      the result, the explanation and the downloadable PDF exactly where they were.
  */
-import { useCallback, useRef, useState } from "react";
+import { Eye, FileText, Lightbulb, MessageCircle, Smartphone, TriangleAlert } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import type { AnalyzeResult } from "@/lib/api";
+import WhatsAppNumberForm from "@/components/WhatsAppNumberForm";
+import { getHealth, type AnalyzeResult } from "@/lib/api";
 import {
   errorKey, isConfigurationProblem, sendReportOnWhatsApp,
 } from "@/lib/whatsapp";
@@ -39,10 +41,10 @@ type Phase = "idle" | "sending" | "sent" | "error";
 function JourneyRail({ delivered }: { delivered: boolean }) {
   const { t } = useCareBridge();
   const steps = [
-    { icon: "👁", label: t("whatsapp.journeyScreen"), done: true },
-    { icon: "💡", label: t("whatsapp.journeyUnderstand"), done: true },
-    { icon: "📄", label: t("whatsapp.journeyReport"), done: true },
-    { icon: "💬", label: t("whatsapp.journeyDeliver"), done: delivered },
+    { icon: <Eye className="ico" size={16} strokeWidth={1.75} />, label: t("whatsapp.journeyScreen"), done: true },
+    { icon: <Lightbulb className="ico" size={16} strokeWidth={1.75} />, label: t("whatsapp.journeyUnderstand"), done: true },
+    { icon: <FileText className="ico" size={16} strokeWidth={1.75} />, label: t("whatsapp.journeyReport"), done: true },
+    { icon: <MessageCircle className="ico" size={16} strokeWidth={1.75} />, label: t("whatsapp.journeyDeliver"), done: delivered },
   ];
   return (
     <ol className="cb-wajourney" aria-hidden="true">
@@ -68,6 +70,17 @@ export default function WhatsAppDelivery({ r }: { r: AnalyzeResult }) {
   // The in-flight lock. A ref rather than state because it has to be correct DURING the
   // click handler, before React has re-rendered — that is the double-click race.
   const inFlight = useRef(false);
+  // Hidden when the server says automatic sending is not set up: offering a box that can
+  // only fail is worse than not offering it. Unknown (health unreachable) keeps it shown,
+  // and the send itself still reports a configuration problem if there is one.
+  const [unavailable, setUnavailable] = useState(false);
+  useEffect(() => {
+    let live = true;
+    getHealth()
+      .then((h) => { if (live && h?.whatsapp && h.whatsapp.configured === false) setUnavailable(true); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   const send = useCallback(async () => {
     if (inFlight.current) return;
@@ -98,6 +111,7 @@ export default function WhatsAppDelivery({ r }: { r: AnalyzeResult }) {
   // cannot take is noise on a page they are reading about their own eyes.
   if (!r.report?.pdf_b64) return null;
   if (!authenticated || !account) return null;
+  if (unavailable) return null;
 
   const masked = sentTo || account.mobile_masked;
   const configProblem = phase === "error" && isConfigurationProblem(errorCode);
@@ -107,15 +121,18 @@ export default function WhatsAppDelivery({ r }: { r: AnalyzeResult }) {
       className={`cb-section cb-whatsapp${phase === "sent" ? " sent" : ""}`}
       aria-labelledby="cb-wa-h"
     >
-      <div className="eyebrow"><span aria-hidden="true">📲</span> {t("whatsapp.eyebrow")}</div>
+      <div className="eyebrow"><span aria-hidden="true"><Smartphone className="ico" size={16} strokeWidth={1.75} /></span> {t("whatsapp.eyebrow")}</div>
       <h3 id="cb-wa-h" className="cb-h">{t("whatsapp.readyTitle")}</h3>
       <p className="cb-lede">{t("whatsapp.readyBody")}</p>
 
       <JourneyRail delivered={phase === "sent"} />
 
       <div className="cb-wacard">
+        {/* Signed in with Google and no WhatsApp number saved yet: offer to add one
+            instead of a Send button that could only fail. */}
+        {!masked ? <WhatsAppNumberForm /> : (<>
         <div className="cb-warow">
-          <span className="cb-waicon" aria-hidden="true">💬</span>
+          <span className="cb-waicon" aria-hidden="true"><MessageCircle className="ico" size={16} strokeWidth={1.75} /></span>
           <div className="cb-wato">
             {/* Before sending, name the destination explicitly — the patient should know
                 which number this is going to BEFORE they tap, not after. Once sent, the
@@ -162,9 +179,9 @@ export default function WhatsAppDelivery({ r }: { r: AnalyzeResult }) {
             ) : phase === "error" && !configProblem ? (
               <><span aria-hidden="true">↻</span> {t("whatsapp.retry")}</>
             ) : phase === "error" ? (
-              <><span aria-hidden="true">⚠</span> {t("whatsapp.failedShort")}</>
+              <><span aria-hidden="true"><TriangleAlert className="ico" size={16} strokeWidth={1.75} /></span> {t("whatsapp.failedShort")}</>
             ) : (
-              <><span aria-hidden="true">💬</span> {t("whatsapp.send")}</>
+              <><span aria-hidden="true"><MessageCircle className="ico" size={16} strokeWidth={1.75} /></span> {t("whatsapp.send")}</>
             )}
           </button>
         )}
@@ -177,7 +194,7 @@ export default function WhatsAppDelivery({ r }: { r: AnalyzeResult }) {
             ? t("whatsapp.queuedShort") : t("whatsapp.sentShort"))}
           {phase === "error" && (
             <span className="cb-waerror">
-              <span aria-hidden="true">⚠</span> {t(errorKey(errorCode))}
+              <span aria-hidden="true"><TriangleAlert className="ico" size={16} strokeWidth={1.75} /></span> {t(errorKey(errorCode))}
             </span>
           )}
           {phase === "idle" && t("whatsapp.explain")}
@@ -186,6 +203,7 @@ export default function WhatsAppDelivery({ r }: { r: AnalyzeResult }) {
         {configProblem && (
           <p className="cb-note">{t("whatsapp.errors.notConfiguredHint")}</p>
         )}
+        </>)}
       </div>
 
       <p className="cb-note">

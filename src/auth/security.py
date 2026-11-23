@@ -126,7 +126,7 @@ def current_account(request: Request) -> Account:
     """Any authenticated, active account."""
     acc = optional_account(request)
     if acc is None:
-        raise _unauthorised("sign in with your mobile number to continue")
+        raise _unauthorised("sign in with Google to continue")
     return acc
 
 

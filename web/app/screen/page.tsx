@@ -1,7 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Check, CloudUpload, Info, ArrowDown } from "lucide-react";
 import Guard from "@/components/Guard";
 import Shell from "@/components/Shell";
+import PageHeader from "@/components/PageHeader";
 import Samples, { type Sample } from "@/components/Samples";
 import { useCareBridge } from "@/components/carebridge/CareBridgeProvider";
 import LanguageOnboarding from "@/components/carebridge/LanguagePicker";
@@ -94,51 +97,97 @@ export default function Screen() {
     a.click(); URL.revokeObjectURL(url);
   };
 
+  const step = result ? 3 : busy ? 2 : 1;
+  const STEPS = ["Upload", "Analyze", "Results"];
+
   return (
     <Guard>
     <Shell>
       {/* Shown only until the person has actually chosen a language. */}
       <LanguageOnboarding />
+      <PageHeader eyebrow={t("nav.screen")} title={t("screen.title")}>
+        {t("screen.subtitle")}
+      </PageHeader>
       {/* "Your previous screening is available." Renders nothing for a first-time
           patient, and asks the server rather than guessing from this browser. */}
       <ReturningBanner />
-      <div className="grid2" style={{ alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+      <div className="rx-screen">
+        <ol className="rx-stepper" aria-label="Screening progress">
+          {STEPS.map((label, i) => {
+            const n = i + 1;
+            const state = n < step ? "done" : n === step ? "now" : "todo";
+            return (
+              <li key={label} className={`rx-step ${state}`} aria-current={state === "now" ? "step" : undefined}>
+                <span className="rx-stepdot">{state === "done" ? <Check size={14} strokeWidth={3} aria-hidden="true" /> : n}</span>
+                <span className="rx-steplabel">{label}</span>
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="rx-uploadcard">
           <div
-            className={`drop ${over ? "over" : ""}`}
-            onClick={() => inputRef.current?.click()}
+            className={`drop rx-drop ${over ? "over" : ""}`}
+            onClick={() => !busy && inputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }}
             onDragLeave={() => setOver(false)}
             onDrop={onDrop}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+            aria-busy={busy}
+            onKeyDown={(e) => e.key === "Enter" && !busy && inputRef.current?.click()}
           >
             <input
               ref={inputRef} type="file" accept="image/*"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) run(f); }}
             />
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>
-              {busy
-                ? <><span className="spin" /> {t("screen.analyzing")}</>
-                : t("screen.upload")}
-            </div>
-            <div className="muted" style={{ fontSize: ".84rem" }}>
-              {busy ? t("screen.analyzingHint") : t("screen.uploadHint")}
-            </div>
+            {busy && preview ? (
+              <div className="rx-analyzing">
+                <div className="rx-analyzingimg">
+                  <img src={preview} alt={t("screen.asUploaded")} />
+                  <span className="rx-scan" aria-hidden="true" />
+                </div>
+                <div className="rx-droptitle"><span className="spin" /> {t("screen.analyzing")}</div>
+                <div className="rx-drophint">{t("screen.analyzingHint")}</div>
+              </div>
+            ) : result && preview ? (
+              // After a result: show what was screened and point down to the result, so
+              // scrolling back up never looks like an empty, unfinished upload.
+              <div className="rx-analyzing rx-done-upload">
+                <div className="rx-analyzingimg">
+                  <img src={preview} alt={t("screen.asUploaded")} />
+                </div>
+                <button
+                  type="button"
+                  className="linkbtn rx-droptitle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  {t("screen.resultBelow")} <ArrowDown size={16} aria-hidden="true" />
+                </button>
+                <span className="cta solid rx-choose">{t("screen.screenAnother")}</span>
+              </div>
+            ) : (
+              <>
+                <span className="rx-dropicon" aria-hidden="true"><CloudUpload size={34} strokeWidth={1.6} /></span>
+                <div className="rx-droptitle">{t("screen.upload")}</div>
+                <div className="rx-drophint">{t("screen.uploadHint")}</div>
+                <div className="rx-dropmeta">Supports JPG and PNG</div>
+                <span className="cta solid rx-choose">Choose Image</span>
+              </>
+            )}
           </div>
 
-          <label style={{ fontSize: ".84rem" }}>
-            <span className="muted">{t("screen.patientRef")}</span>
+          <label className="rx-field">
+            <span>{t("screen.patientRef")}</span>
             <input
               value={patientRef}
               onChange={(e) => setPatientRef(e.target.value)}
               placeholder="PHC-2026-0001"
-              style={{
-                width: "100%", marginTop: 5, padding: "9px 11px",
-                border: "1px solid var(--line-2)", borderRadius: 6,
-                background: "var(--surface)", color: "var(--ink)", fontSize: ".9rem",
-              }}
+              className="txt"
             />
           </label>
 
@@ -148,46 +197,19 @@ export default function Screen() {
               run(f, `Sample: ${sm.title} — expected to be ${sm.expect}.`)}
           />
 
-          {preview && (
-            <figure style={{ margin: 0 }}>
-              <img
-                src={preview} alt="uploaded fundus"
-                style={{ width: "100%", borderRadius: 8, border: "1px solid var(--line)" }}
-              />
-              <figcaption className="muted" style={{ fontSize: ".74rem", marginTop: 6 }}>
-                {t("screen.asUploaded")}
-              </figcaption>
-            </figure>
-          )}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {error && <div className="err">{error}</div>}
-
-          {!result && !busy && !error && (
-            <div className="card">
-              <div className="eyebrow">{t("screen.whatYouGetTitle")}</div>
-              <ul style={{ fontSize: ".88rem", color: "var(--ink-2)", paddingLeft: 18 }}>
+          <div className="rx-tip">
+            <Info size={20} aria-hidden="true" />
+            <div>
+              <div className="rx-tiptitle">{t("screen.whatYouGetTitle")}</div>
+              <ul>
                 {tList("screen.whatYouGet").map((line, i) => <li key={i}>{line}</li>)}
               </ul>
+              <Link href="/how-it-works">See how the screening works <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
-          )}
+          </div>
 
-          {sampleNote && (
-            <div className="muted" style={{ fontSize: ".8rem" }}>{sampleNote}</div>
-          )}
-
-          {busy && (
-            <div className="card">
-              <div className="eyebrow">{t("common.appName")}</div>
-              <p style={{ margin: "8px 0 0" }}>
-                <span className="spin" /> {t("screen.analyzing")}
-              </p>
-              <p className="muted" style={{ fontSize: ".84rem", margin: "6px 0 0" }}>
-                {t("screen.analyzingHint")}
-              </p>
-            </div>
-          )}
+          {error && <div className="err">{error}</div>}
+          {sampleNote && <div className="muted" style={{ fontSize: ".8rem" }}>{sampleNote}</div>}
         </div>
       </div>
 
@@ -197,7 +219,7 @@ export default function Screen() {
           their own result should not be doing it in a side column. */}
       {result && (
         <div className="cb-results" ref={resultRef}>
-          <CareResult r={result} onDownload={downloadPdf} />
+          <CareResult r={result} onDownload={downloadPdf} image={preview ?? undefined} />
 
           {/* ---- CareBridge Eye Health Passport -------------------------------
               What changed since last time, the timeline it sits on, the follow-up

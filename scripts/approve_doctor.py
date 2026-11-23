@@ -12,13 +12,13 @@ WHY IT IS NOT A BACKDOOR
     token, and cannot be triggered by a signup, a request body, or any API call. A person
     creating a doctor account through the UI cannot reach it.
 
-    There is no universal OTP, no "dev doctor" mobile number, and no flag anywhere that
+    There is no "dev doctor" account, no magic email, and no flag anywhere that
     grants doctor privileges without a deliberate approval recorded here or through
     POST /v1/auth/admin/doctors/{id}/verify.
 
 USAGE
     .venv/bin/python scripts/approve_doctor.py --list
-    .venv/bin/python scripts/approve_doctor.py --mobile +919876543210
+    .venv/bin/python scripts/approve_doctor.py --email doctor@gmail.com
     .venv/bin/python scripts/approve_doctor.py --account-id acc_... --revoke
 
 FOR PRODUCTION
@@ -41,14 +41,14 @@ import argparse
 import sys
 
 from src.auth import service
-from src.auth.models import Role, mask_mobile
+from src.auth.models import Role
 from src.auth.storage import get_auth_store
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mobile", help="mobile number of the doctor account")
+    ap.add_argument("--email", help="Google email of the doctor account")
     ap.add_argument("--account-id", help="account id of the doctor account")
     ap.add_argument("--revoke", action="store_true",
                     help="remove verification instead of granting it")
@@ -59,26 +59,26 @@ def main() -> int:
 
     store = get_auth_store()
 
-    if args.list or not (args.mobile or args.account_id):
+    if args.list or not (args.email or args.account_id):
         doctors = store.list_accounts(Role.DOCTOR.value)
         if not doctors:
             print("No doctor accounts yet.")
             print(f"(account store: {store.dir})")
             return 0
-        print(f"{'ACCOUNT ID':<24} {'MOBILE':<20} {'VERIFIED':<9} REGISTRATION")
+        print(f"{'ACCOUNT ID':<24} {'EMAIL':<32} {'VERIFIED':<9} REGISTRATION")
         for a in doctors:
             prof = a.doctor_profile or {}
-            print(f"{a.account_id:<24} {mask_mobile(a.mobile):<20} "
+            print(f"{a.account_id:<24} {a.email:<32} "
                   f"{str(a.doctor_verified):<9} "
                   f"{prof.get('registration_number','—')} · {prof.get('doctor_name','—')}")
         if not args.list:
-            print("\nPass --mobile or --account-id to approve one.")
+            print("\nPass --email or --account-id to approve one.")
         return 0
 
     acc = (store.get(args.account_id) if args.account_id
-           else store.get_by_mobile(args.mobile))
+           else store.get_by_email(args.email))
     if acc is None:
-        print(f"No account found for {args.account_id or args.mobile}", file=sys.stderr)
+        print(f"No account found for {args.account_id or args.email}", file=sys.stderr)
         return 1
     if acc.role != Role.DOCTOR.value:
         print(f"{acc.account_id} has role '{acc.role}', not 'doctor'. "
@@ -92,7 +92,7 @@ def main() -> int:
         return 1
 
     state = "VERIFIED" if updated.doctor_verified else "NOT VERIFIED"
-    print(f"{updated.account_id} ({mask_mobile(updated.mobile)}) -> {state}")
+    print(f"{updated.account_id} ({updated.email}) -> {state}")
     print("The doctor sees the change on their next request; no re-login is required, "
           "but the UI refreshes the session on navigation.")
     return 0

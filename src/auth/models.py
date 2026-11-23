@@ -2,8 +2,9 @@
 
 Two rules encoded here rather than in prose:
 
-  1. There is no password field anywhere. Authentication is possession of the mobile
-     number, proved by OTP.
+  1. There is no password field anywhere. Authentication is Sign in with Google: the
+     account is keyed by Google's stable user id (`google_sub`), proved by a Google ID
+     token the backend verifies (src/auth/google.py).
   2. `doctor_verified` is a property of the stored account, never of the request. A
      signup can ASK for the doctor role; it can never grant itself the privilege.
 """
@@ -67,8 +68,10 @@ def normalise_mobile(raw: str) -> str:
     return s
 
 
-def mask_mobile(mobile: str) -> str:
+def mask_mobile(mobile: str | None) -> str:
     """+919876543210 -> +91 ***** 43210. Used in logs and in UI echoes."""
+    if not mobile:
+        return ""
     if len(mobile) < 6:
         return "*****"
     return f"{mobile[:3]} ***** {mobile[-5:]}"
@@ -97,7 +100,13 @@ class DoctorProfile:
 @dataclass
 class Account:
     account_id: str
-    mobile: str
+    email: str = ""
+    google_sub: str = ""            # Google's stable user id — the login identity
+    name: str = ""
+    picture: str = ""
+    # OPTIONAL WhatsApp delivery number, set by the person after signing in. It is not a
+    # login credential and nothing verifies it; it is only where reports are sent.
+    mobile: str | None = None
     role: str = Role.USER.value
     doctor_verified: bool = False
     status: str = AccountStatus.ACTIVE.value
@@ -134,13 +143,15 @@ class Account:
         return cls(**{k: v for k, v in rec.items() if k in known})
 
     def to_public(self) -> dict:
-        """What /v1/auth/me returns. The mobile is the caller's own, so it is included;
-        nothing else about the account is exposed, and no other account is ever
-        reachable through this shape."""
+        """What /v1/auth/me returns. Email and WhatsApp number are the caller's own, so
+        they are included; no other account is ever reachable through this shape."""
         return {
             "account_id": self.account_id,
+            "email": self.email,
+            "name": self.name,
+            "picture": self.picture,
             "mobile": self.mobile,
-            "mobile_masked": mask_mobile(self.mobile),
+            "mobile_masked": mask_mobile(self.mobile) if self.mobile else None,
             "role": self.role,
             "doctor_verified": self.doctor_verified,
             "status": self.status,
@@ -166,24 +177,42 @@ class DoctorProfileIn(BaseModel):
     hospital: str = Field(min_length=2, max_length=160)
 
 
-class SignInIn(BaseModel):
-    """Everything sign-in accepts. There is no code, and no password field.
+class GoogleSignInIn(BaseModel):
+    """Everything sign-in accepts: a Google ID token and, at signup, a role request.
 
     THE ONE THING THIS BODY CANNOT DO is grant a privilege. `role` is a REQUEST carried
     from the signup form: `LocalAuthStore.create` coerces anything but user/doctor down
-    to user, refuses admin outright, and creates every doctor with
-    `doctor_verified = False`. Promotion happens only through
+    to user, refuses admin outright (admin comes only from ADMIN_EMAILS), and creates
+    every doctor with `doctor_verified = False`. Promotion happens only through
     `service.approve_doctor()`, which a browser cannot reach.
+
+    Identity (email, Google id) is NEVER read from this body — only from the verified
+    token.
     """
-    mobile: str
-    # "login" expects an existing account, "signup" creates one. Both succeed either
-    # way — the distinction only decides whether the doctor details are read — but the
-    # field is kept so the UI can say something accurate on each screen.
+    credential: str = Field(min_length=10, max_length=8192)
+    # "login" signs in an existing account (and creates a patient account on first
+    # use); "signup" may additionally create a doctor account with its profile.
     intent: str = Field(default="login", pattern="^(login|signup)$")
     role: str = Field(default=Role.USER.value, pattern="^(user|doctor)$")
     doctor_profile: DoctorProfileIn | None = None
+    # Optional WhatsApp number to store at signup. Can be set later instead.
+    mobile: str | None = None
 
     @field_validator("mobile")
     @classmethod
-    def _mobile(cls, v: str) -> str:
+    def _mobile(cls, v: str | None) -> str | None:
+        if v is None or not str(v).strip():
+            return None
+        return normalise_mobile(v)
+
+
+class WhatsAppNumberIn(BaseModel):
+    """Set (or clear, with null/empty) the caller's own WhatsApp delivery number."""
+    mobile: str | None = None
+
+    @field_validator("mobile")
+    @classmethod
+    def _mobile(cls, v: str | None) -> str | None:
+        if v is None or not str(v).strip():
+            return None
         return normalise_mobile(v)

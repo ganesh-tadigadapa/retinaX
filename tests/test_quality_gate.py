@@ -101,7 +101,9 @@ def test_illumination_and_focus_failing_together_blames_lighting_not_the_lens():
 
     # a real-shaped fundus with a hard one-sided luminance ramp
     img = np.zeros((600, 600, 3), np.uint8)
-    cv2.circle(img, (300, 300), 280, (120, 90, 70), -1)
+    # BGR: an orange-red retina (R=120). It was (120, 90, 70) - blue - which the
+    # is-this-a-fundus check now correctly refuses before lighting is ever assessed.
+    cv2.circle(img, (300, 300), 280, (70, 90, 120), -1)
     ramp = np.linspace(1.0, 0.2, 600, dtype=np.float32)
     img = np.clip(img.astype(np.float32) * ramp[None, :, None], 0, 255).astype(np.uint8)
 

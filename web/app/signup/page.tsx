@@ -1,23 +1,24 @@
 "use client";
 /**
- * Create an account: mobile number and account type. One step.
+ * Create an account with Google: choose Patient or Doctor, fill in what that needs, then
+ * continue with Google.
  *
- * There is no code, no password and no verification: the number is taken as CLAIMED.
- * The number still matters — it is the identity that owns this person's screening
- * history and the number their WhatsApp report is delivered to.
+ * What has NOT changed is that choosing "Doctor" grants nothing. The backend creates
+ * every doctor with `doctor_verified = false` (src/auth/storage.py::create) and only
+ * `service.approve_doctor()` — an admin endpoint or a local script — can change that.
+ * This form records a claim for a human to check.
  *
- * What has NOT changed is that choosing "Doctor Account" grants nothing. The backend
- * creates every doctor with `doctor_verified = false` (src/auth/storage.py::create) and
- * only `service.approve_doctor()` — an admin endpoint or a local script — can change
- * that. This form records a claim for a human to check.
+ * The WhatsApp number is optional and is not a login credential; it is only where
+ * reports are sent, and can be added later from the result page.
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AuthLayout, FieldLabel } from "@/components/AuthCard";
+import { AuthLayout, FieldLabel, RoleToggle } from "@/components/AuthCard";
 import { useCareBridge } from "@/components/carebridge/CareBridgeProvider";
 import { useAuth } from "@/components/AuthProvider";
-import { normaliseMobile, signIn, signInErrorMessage } from "@/lib/auth";
+import GoogleButton from "@/components/GoogleButton";
+import { normaliseMobile, signInErrorMessage, signInWithGoogle } from "@/lib/auth";
 
 type Role = "user" | "doctor";
 
@@ -27,13 +28,23 @@ export default function SignupPage() {
   const { refresh, authenticated, account } = useAuth();
 
   const [done, setDone] = useState(false);
-  const [mobile, setMobile] = useState("");
   const [role, setRole] = useState<Role>("user");
+  const [mobile, setMobile] = useState("");
   const [doctorName, setDoctorName] = useState("");
   const [regNumber, setRegNumber] = useState("");
   const [hospital, setHospital] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // /signup?role=doctor (from the login page) preselects the doctor form. Read once on
+  // the client rather than via useSearchParams, which would force a Suspense boundary.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("role") === "doctor") {
+        setRole("doctor");
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     if (!done && authenticated && account) {
@@ -41,22 +52,28 @@ export default function SignupPage() {
     }
   }, [done, authenticated, account, router]);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const m = normaliseMobile(mobile);
-    if (!m) { setError("Enter a 10-digit mobile number."); return; }
+  /** Everything checkable before Google is involved. Returns an error sentence or null. */
+  const problem = (): string | null => {
+    if (mobile.trim() && !normaliseMobile(mobile)) return "Enter a 10-digit mobile number.";
     if (role === "doctor") {
-      if (doctorName.trim().length < 2) { setError("Enter the doctor’s full name."); return; }
-      if (regNumber.trim().length < 3) { setError("Enter the medical registration number."); return; }
-      if (hospital.trim().length < 2) { setError("Enter the hospital or clinic name."); return; }
+      if (doctorName.trim().length < 2) return "Enter the doctor’s full name.";
+      if (regNumber.trim().length < 3) return "Enter the medical registration number.";
+      if (hospital.trim().length < 2) return "Enter the hospital or clinic name.";
     }
+    return null;
+  };
+
+  const onCredential = async (credential: string) => {
+    setError(null);
+    const p = problem();
+    if (p) { setError(p); return; }
     setBusy(true);
     try {
-      const r = await signIn({
-        mobile: m,
+      const r = await signInWithGoogle({
+        credential,
         intent: "signup",
         role,
+        mobile: mobile.trim() ? normaliseMobile(mobile) || undefined : undefined,
         doctor_profile: role === "doctor"
           ? {
               doctor_name: doctorName.trim(),
@@ -87,41 +104,15 @@ export default function SignupPage() {
       {error && <div className="err" style={{ marginBottom: 14 }}>{error}</div>}
 
       {!done && (
-        <form onSubmit={submit}>
-          <label className="field">
-            <FieldLabel>Mobile Number</FieldLabel>
-            <div className="mobileinput">
-              <span className="cc">+91</span>
-              <input
-                autoFocus type="tel" inputMode="numeric" autoComplete="tel"
-                placeholder="98765 43210"
-                value={mobile} onChange={(e) => setMobile(e.target.value)}
-              />
-            </div>
-          </label>
-
+        <div>
           <div className="field">
             <FieldLabel>Choose account type</FieldLabel>
-            <div className="roletiles">
-              <button
-                type="button"
-                className={`roletile ${role === "user" ? "on" : ""}`}
-                onClick={() => setRole("user")}
-                aria-pressed={role === "user"}
-              >
-                <span className="rt">User Account</span>
-                <span className="rd">Screen retinal images and see your own results.</span>
-              </button>
-              <button
-                type="button"
-                className={`roletile ${role === "doctor" ? "on" : ""}`}
-                onClick={() => setRole("doctor")}
-                aria-pressed={role === "doctor"}
-              >
-                <span className="rt">Doctor Account</span>
-                <span className="rd">Everything above, plus the anonymised report queue after verification.</span>
-              </button>
-            </div>
+            <RoleToggle role={role} onChange={(r) => { setRole(r); setError(null); }} />
+            <p className="cb-note" style={{ marginTop: 10 }}>
+              {role === "doctor"
+                ? "Everything a patient can do, plus the anonymised report queue after verification."
+                : "Screen retinal images and see your own results."}
+            </p>
           </div>
 
           {role === "doctor" && (
@@ -149,16 +140,26 @@ export default function SignupPage() {
             </div>
           )}
 
-          <button className="primary bigbtn" type="submit" disabled={busy}>
-            {busy ? <><span className="spin" /> Creating…</> : "Create account"}
-          </button>
+          <label className="field">
+            <FieldLabel>{t("auth.mobileLabel")}</FieldLabel>
+            <div className="mobileinput">
+              <span className="cc">+91</span>
+              <input
+                type="tel" inputMode="numeric" autoComplete="tel"
+                placeholder="98765 43210"
+                value={mobile} onChange={(e) => setMobile(e.target.value)}
+              />
+            </div>
+            <span className="cb-note">{t("auth.whatsappHint")}</span>
+          </label>
 
-          {/* Stated on the screen rather than buried in a doc. */}
-          <p className="cb-note" style={{ marginTop: 16 }}>
-            This build does not verify your number — there is no code to enter. Your
-            number identifies your records and is where your report is sent.
-          </p>
-        </form>
+          <GoogleButton onCredential={onCredential} text="signup_with" disabled={busy} />
+          {busy && (
+            <p className="muted" style={{ textAlign: "center", marginTop: 10 }}>
+              <span className="spin" /> Creating your account…
+            </p>
+          )}
+        </div>
       )}
 
       {done && (

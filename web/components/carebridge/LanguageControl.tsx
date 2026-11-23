@@ -7,6 +7,7 @@
  * is running in Telugu. Opening it exposes the three preferences and nothing else; this
  * is a language panel, not a settings screen.
  */
+import { Globe, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGES } from "@/lib/i18n";
@@ -55,9 +56,9 @@ export default function LanguageControl() {
         aria-label={t("a11y.openLanguageMenu")}
         onClick={() => setOpen((v) => !v)}
       >
-        <span aria-hidden="true">🌐</span>
+        <span aria-hidden="true"><Globe className="ico" size={16} strokeWidth={1.75} /></span>
         <span className="cb-triggerlang">{meta.nativeName}</span>
-        {voice && <span aria-hidden="true" className="cb-triggervoice">🔊</span>}
+        {voice && <span aria-hidden="true" className="cb-triggervoice"><Volume2 className="ico" size={16} strokeWidth={1.75} /></span>}
       </button>
 
       {open && (

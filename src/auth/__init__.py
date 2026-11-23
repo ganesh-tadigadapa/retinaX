@@ -7,12 +7,11 @@ about what the service computes.
 
 Layout
     config.py    environment-driven settings, with production guards
-    models.py    Account, Role, mobile normalisation, request/response shapes
-    otp.py       OTP generation, hashing, expiry, single use, rate limiting
-    sms.py       send_otp(mobile, otp) — vendor-agnostic delivery
+    models.py    Account, Role, request/response shapes
+    google.py    verifies a Google ID token -> GoogleIdentity
     security.py  session tokens + the FastAPI authorisation dependencies
-    service.py   the use-cases (request OTP, verify, logout, approve doctor)
-    storage.py   account / challenge / revocation persistence
+    service.py   the use-cases (sign in, WhatsApp number, logout, approve doctor)
+    storage.py   account / revocation persistence
     routes.py    the /v1/auth HTTP surface
 """
 from src.auth.models import Account, Role            # noqa: F401

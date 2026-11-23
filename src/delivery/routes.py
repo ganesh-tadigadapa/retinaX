@@ -62,6 +62,7 @@ _STATUS = {
     # allow-list. An operator action, not something the patient can retry into success.
     "recipient_not_allowed": 503,
     "sender_not_whatsapp": 503,
+    "no_whatsapp_number": 409,
     "session_window_closed": 409,
     "report_not_ready": 409,
 }
@@ -157,6 +158,12 @@ def send_report_on_whatsapp(scan_id: str, body: WhatsAppSendIn,
                     "status": previous.get("status"),
                     "sent_at": previous.get("sent_at"), "duplicate": True}
 
+        if not account.mobile:
+            # Sign-in is Google now, so a WhatsApp number is optional and set by the
+            # person. No number -> nothing to send to; say so rather than guess.
+            return _fail("no_whatsapp_number",
+                         "Add your WhatsApp number to receive reports on WhatsApp.")
+
         service = get_whatsapp_service()
         ok, why = service.configured()
         if not ok:
@@ -168,8 +175,8 @@ def send_report_on_whatsapp(scan_id: str, body: WhatsAppSendIn,
 
         # The recipient is read from the AUTHENTICATED ACCOUNT, never from the request
         # body — see WhatsAppSendIn, which has nowhere to put a number. `account.mobile`
-        # is verified by construction: an account only exists once an OTP sent to that
-        # exact number was confirmed (src/auth/service.py::verify_otp).
+        # is the WhatsApp number the person set on their own account
+        # (PUT /v1/auth/me/whatsapp). It is not verified.
         result = service.send_report(
             to_mobile=account.mobile, media_url=media_url, body=text,
             # Meta shows this as the attachment name in the chat. Twilio ignores it and

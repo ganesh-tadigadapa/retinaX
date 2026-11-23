@@ -6,7 +6,7 @@
  * three rules, because they are what make the channel safe:
  *
  *   1. **The patient never types their number.** The recipient is the authenticated
- *      account's verified mobile, read server-side. This component only ever sees the
+ *      account's saved WhatsApp number, read server-side. This component only ever sees the
  *      masked form, and only to show it back.
  *   2. **Success is never assumed.** The sent state renders only after the backend
  *      confirms the provider accepted the message. No optimistic update.
@@ -14,8 +14,10 @@
  *      downloadable — and the download button below is here, visible, in every state,
  *      rather than appearing only once something has gone wrong.
  */
+import { FileText, MessageCircle, Smartphone, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import WhatsAppNumberForm from "@/components/WhatsAppNumberForm";
 import { downloadComparisonPdf, sendComparisonOnWhatsApp } from "@/lib/passport";
 import { errorKey, isConfigurationProblem } from "@/lib/whatsapp";
 import { useCareBridge } from "@/components/carebridge/CareBridgeProvider";
@@ -80,13 +82,16 @@ export default function ComparisonDelivery({ screeningId }: { screeningId: strin
   return (
     <section className={`cb-section cb-whatsapp${phase === "sent" ? " sent" : ""}`}
              aria-labelledby="pp-send-h">
-      <div className="eyebrow"><span aria-hidden="true">📲</span> {t("whatsapp.eyebrow")}</div>
+      <div className="eyebrow"><span aria-hidden="true"><Smartphone className="ico" size={16} strokeWidth={1.75} /></span> {t("whatsapp.eyebrow")}</div>
       <h3 id="pp-send-h" className="cb-h">{t("passport.sendTitle")}</h3>
       <p className="cb-lede">{t("passport.sendBody")}</p>
 
       <div className="cb-wacard">
+        {/* Signed in with Google and no WhatsApp number saved yet: offer to add one
+            instead of a Send button that could only fail. */}
+        {!masked ? <WhatsAppNumberForm /> : (<>
         <div className="cb-warow">
-          <span className="cb-waicon" aria-hidden="true">💬</span>
+          <span className="cb-waicon" aria-hidden="true"><MessageCircle className="ico" size={16} strokeWidth={1.75} /></span>
           <div className="cb-wato">
             <span className="cb-label">
               {phase === "sent" ? t("whatsapp.channelLabel")
@@ -123,8 +128,8 @@ export default function ComparisonDelivery({ screeningId }: { screeningId: strin
               : phase === "error" && !configProblem
                 ? <><span aria-hidden="true">↻</span> {t("passport.sendRetry")}</>
                 : phase === "error"
-                  ? <><span aria-hidden="true">⚠</span> {t("passport.sendFailed")}</>
-                  : <><span aria-hidden="true">💬</span> {t("passport.sendButton")}</>}
+                  ? <><span aria-hidden="true"><TriangleAlert className="ico" size={16} strokeWidth={1.75} /></span> {t("passport.sendFailed")}</>
+                  : <><span aria-hidden="true"><MessageCircle className="ico" size={16} strokeWidth={1.75} /></span> {t("passport.sendButton")}</>}
           </button>
         )}
 
@@ -134,13 +139,15 @@ export default function ComparisonDelivery({ screeningId }: { screeningId: strin
             ? t("passport.sendQueued") : t("whatsapp.sentShort"))}
           {phase === "error" && (
             <span className="cb-waerror">
-              <span aria-hidden="true">⚠</span>{" "}
+              <span aria-hidden="true"><TriangleAlert className="ico" size={16} strokeWidth={1.75} /></span>{" "}
               {code === "comparison_not_available"
                 ? t("passport.sendNotAvailable") : t(errorKey(code))}
             </span>
           )}
           {phase === "idle" && t("whatsapp.explain")}
         </p>
+
+        </>)}
 
         {/* Present in EVERY state, not only after a failure. The promise that the
             comparison is reachable without WhatsApp is only true if the button is
@@ -150,7 +157,7 @@ export default function ComparisonDelivery({ screeningId }: { screeningId: strin
                   disabled={downloading} aria-busy={downloading}>
             {downloading
               ? <><span className="spin" aria-hidden="true" /> {t("passport.downloading")}</>
-              : <><span aria-hidden="true">📄</span> {t("passport.download")}</>}
+              : <><span aria-hidden="true"><FileText className="ico" size={16} strokeWidth={1.75} /></span> {t("passport.download")}</>}
           </button>
           {downloadError && (
             <span className="cb-waerror">{t("passport.downloadFailed")}</span>

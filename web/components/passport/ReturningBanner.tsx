@@ -10,6 +10,7 @@
  * every one of them. It renders nothing at all while it does not know, and nothing for
  * a first-time patient — an empty history is a normal state, not an error.
  */
+import { IdCard } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPassportStatus, shortDate, type PassportStatus } from "@/lib/passport";
@@ -32,7 +33,7 @@ export default function ReturningBanner() {
 
   return (
     <section className="pp-returning" aria-labelledby="pp-ret-h">
-      <span className="pp-reticon" aria-hidden="true">🪪</span>
+      <span className="pp-reticon" aria-hidden="true"><IdCard className="ico" size={16} strokeWidth={1.75} /></span>
       <div>
         <div className="eyebrow">{t("passport.eyebrow")}</div>
         <h3 id="pp-ret-h">{t("passport.returnTitle")}</h3>

@@ -2,10 +2,11 @@
   {
     "file": "aptos-grade0.png",
     "title": "No DR (grade 0)",
-    "description": "Held-out APTOS image, ground-truth grade 0. Not referable. Replaced the previous grade-0 sample, which the newly fitted quality thresholds refuse (focus 55.8 vs threshold 94.1) \u2014 a genuine false reject, see the 20.8% false-reject rate in docs/BENCHMARKS.md.",
+    "description": "Held-out APTOS image, ground-truth grade 0. Not referable.",
     "expect": "graded",
     "source": "APTOS 4958bfcc9f38 (validation split, held out of training)",
-    "true_grade": 0
+    "true_grade": 0,
+    "dev_note": "Held-out APTOS image, ground-truth grade 0. Not referable. Replaced the previous grade-0 sample, which the newly fitted quality thresholds refuse (focus 55.8 vs threshold 94.1) — a genuine false reject, see the 20.8% false-reject rate in docs/BENCHMARKS.md."
   },
   {
     "file": "aptos-grade1.png",
@@ -26,10 +27,11 @@
   {
     "file": "aptos-grade3.png",
     "title": "Severe NPDR (grade 3)",
-    "description": "Held-out APTOS image, ground-truth grade 3. Referable. Grade 3 is this model's weakest class (F1 0.267).",
+    "description": "Held-out APTOS image, ground-truth grade 3. Referable. Grade 3 is the model's weakest class.",
     "expect": "graded",
     "source": "APTOS 74eee788edee.png (validation split, held out of training)",
-    "true_grade": 3
+    "true_grade": 3,
+    "dev_note": "Held-out APTOS image, ground-truth grade 3. Referable. Grade 3 is this model's weakest class (F1 0.267)."
   },
   {
     "file": "aptos-grade4.png",
@@ -42,17 +44,19 @@
   {
     "file": "aptos-ungradeable-focus.png",
     "title": "Ungradeable (real)",
-    "description": "A genuine APTOS image that fails the quality gate on BOTH focus and illumination. The recapture advice names lighting as the likely root cause, because severe uneven lighting drags the focus score down: measured on 33 illumination-degraded images, 29 tripped both checks and none tripped illumination alone. Kept at native resolution.",
+    "description": "A real APTOS photo with poor focus and uneven lighting. It should be refused with a retake instruction.",
     "expect": "refused",
     "source": "APTOS 8676427e4625 (validation split, held out of training)",
-    "true_grade": 1
+    "true_grade": 1,
+    "dev_note": "A genuine APTOS image that fails the quality gate on BOTH focus and illumination. The recapture advice names lighting as the likely root cause, because severe uneven lighting drags the focus score down: measured on 33 illumination-degraded images, 29 tripped both checks and none tripped illumination alone. Kept at native resolution."
   },
   {
     "file": "aptos-ungradeable-fov.png",
     "title": "Retina out of frame (cropped)",
-    "description": "A held-out APTOS image CROPPED to 40% width to simulate a mis-framed capture. Should be REFUSED on field of view.",
+    "description": "A real APTOS photo cropped so the retina is out of frame. It should be refused with a retake instruction.",
     "expect": "refused",
-    "source": "APTOS e68bdd36e589.png (validation split), cropped to 40% width \u2014 modified, not a natural capture",
-    "modified": true
+    "source": "APTOS e68bdd36e589.png (validation split), cropped to 40% width — modified, not a natural capture",
+    "modified": true,
+    "dev_note": "A held-out APTOS image CROPPED to 40% width to simulate a mis-framed capture. Should be REFUSED on field of view."
   }
 ]

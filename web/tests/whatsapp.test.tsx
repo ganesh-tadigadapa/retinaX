@@ -35,10 +35,17 @@ function Wrap({ children }: { children: React.ReactNode }) {
   return <CareBridgeProvider>{children}</CareBridgeProvider>;
 }
 
-/** Stub the one call the card makes, and hand back the recorded requests. */
+/** /health as the card sees it: automatic sending is configured. */
+const HEALTH_OK = { status: "ok", whatsapp: { enabled: true, configured: true } };
+const isHealth = (url: any) => String(url).endsWith("/health");
+const healthResponse = (body: any = HEALTH_OK) =>
+  ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
+
+/** Stub the send call (the /health probe is answered and not recorded). */
 function stubSend(response: any, status = 200) {
   const calls: { url: string; body: any }[] = [];
   const fetchMock = vi.fn(async (url: string, init: any) => {
+    if (isHealth(url)) return healthResponse();
     calls.push({ url: String(url), body: JSON.parse(init?.body || "{}") });
     return {
       ok: status >= 200 && status < 300,
@@ -54,7 +61,8 @@ function stubSend(response: any, status = 200) {
 function stubPendingSend() {
   let release!: (v: any) => void;
   const pending = new Promise((res) => { release = res; });
-  vi.stubGlobal("fetch", vi.fn(async () => {
+  vi.stubGlobal("fetch", vi.fn(async (url: any) => {
+    if (isHealth(url)) return healthResponse();
     await pending;
     return { ok: true, status: 200, json: async () => OK } as unknown as Response;
   }));
@@ -216,6 +224,32 @@ describe("button states", () => {
     expect(screen.getByText(en.whatsapp.verifiedNumberIntro)).toBeInTheDocument();
   });
 
+  it("asks for a WhatsApp number instead of offering Send when none is saved", async () => {
+    // Sign-in is Google, so an account can exist with no phone number at all.
+    const before = session.account;
+    session.account = { mobile_masked: null } as any;
+    const refresh = vi.fn();
+    (session as any).refresh = refresh;
+    try {
+      const calls = stubSend({ ok: true, account: { mobile_masked: MASKED } });
+      render(<Wrap><WhatsAppDelivery r={makeResult()} /></Wrap>);
+      expect(screen.getByText(en.whatsapp.addNumberIntro)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: new RegExp(en.whatsapp.send) }))
+        .not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByPlaceholderText("98765 43210"),
+                       { target: { value: "98123 40001" } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: en.whatsapp.saveNumber }));
+      });
+      expect(calls[0].url).toContain("/v1/auth/me/whatsapp");
+      expect(calls[0].body).toEqual({ mobile: FULL });
+      expect(refresh).toHaveBeenCalled();
+    } finally {
+      session.account = before;
+    }
+  });
+
   it("reports a queued message as queued, not as delivered", async () => {
     // Twilio answers "queued"; claiming anything stronger would be a delivery promise
     // we have not been given.
@@ -233,6 +267,18 @@ describe("button states", () => {
   });
 });
 
+// ------------------------------------------------- not configured on the server
+describe("server without WhatsApp configured", () => {
+  it("hides the card instead of offering a send that can only fail", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: any) =>
+      isHealth(url)
+        ? healthResponse({ status: "ok", whatsapp: { enabled: true, configured: false } })
+        : healthResponse(OK)));
+    const { container } = render(<Wrap><WhatsAppDelivery r={makeResult()} /></Wrap>);
+    await waitFor(() => expect(container.textContent).toBe(""));
+  });
+});
+
 // ---------------------------------------------------------------- 3. duplicates
 describe("duplicate protection", () => {
   it("a double tap makes one request, not two", async () => {
@@ -243,7 +289,8 @@ describe("duplicate protection", () => {
     fireEvent.click(button);
     fireEvent.click(button);
     await finish();
-    expect((globalThis.fetch as any).mock.calls).toHaveLength(1);
+    const sends = (globalThis.fetch as any).mock.calls.filter((c: any[]) => !isHealth(c[0]));
+    expect(sends).toHaveLength(1);
   });
 
   it("there is no button left to press once the report has been sent", async () => {

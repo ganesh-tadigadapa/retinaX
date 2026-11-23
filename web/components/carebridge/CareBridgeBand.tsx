@@ -7,6 +7,7 @@
  * behind a settings icon — so this band states it plainly and, being itself translated,
  * demonstrates it at the same time.
  */
+import { Globe, MessageCircle, Stethoscope, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { LANGUAGES } from "@/lib/i18n";
 import { useCareBridge } from "./CareBridgeProvider";
@@ -16,7 +17,7 @@ export default function CareBridgeBand() {
   return (
     <section className="band cb-band" aria-labelledby="cb-band-h">
       <h3 id="cb-band-h">
-        <span aria-hidden="true">🌍</span> {t("common.appName")} — {t("common.appTagline")}
+        <span aria-hidden="true"><Globe className="ico" size={16} strokeWidth={1.75} /></span> {t("common.appName")} — {t("common.appTagline")}
       </h3>
       <p className="intro">{t("journey.intro")}</p>
 
@@ -38,9 +39,9 @@ export default function CareBridgeBand() {
           ))}
         </div>
         <ul className="cb-bandlist">
-          <li><span aria-hidden="true">🔊</span> {t("onboarding.voiceNote")}</li>
-          <li><span aria-hidden="true">💬</span> {t("common.simpleHint")}</li>
-          <li><span aria-hidden="true">🩺</span> {t("common.clinicalHint")}</li>
+          <li><span aria-hidden="true"><Volume2 className="ico" size={16} strokeWidth={1.75} /></span> {t("onboarding.voiceNote")}</li>
+          <li><span aria-hidden="true"><MessageCircle className="ico" size={16} strokeWidth={1.75} /></span> {t("common.simpleHint")}</li>
+          <li><span aria-hidden="true"><Stethoscope className="ico" size={16} strokeWidth={1.75} /></span> {t("common.clinicalHint")}</li>
         </ul>
       </div>
 

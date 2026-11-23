@@ -53,6 +53,7 @@ export const en = {
     limitations: "Limitations",
     carebridge: "CareBridge",
     passport: "Passport",
+    hospitals: "Eye hospitals",
     login: "Login",
     signup: "Create account",
     logout: "Logout",
@@ -91,16 +92,18 @@ export const en = {
 
   auth: {
     signInTitle: "Sign in",
-    signInSub: "Enter your mobile number. We will send you a one-time code.",
+    signInSub: "Continue with Google. Choose whether you are signing in as a patient or a doctor.",
     createTitle: "Create an account",
-    createSub: "Screening needs a verified mobile number. There is no password.",
-    mobileLabel: "Mobile number",
-    otpPrompt: "Enter the code we sent you.",
-    noPassword: "No password is ever stored for your account.",
+    createSub: "Create your account with Google. There is no password to remember.",
+    mobileLabel: "WhatsApp number (optional)",
+    whatsappHint: "Only used to send your reports on WhatsApp. You can add or change it later.",
+    noPassword: "No password is ever stored — Google confirms who you are.",
     languageStays: "Changing your language does not sign you out.",
   },
 
   screen: {
+    resultBelow: "Your result is ready below",
+    screenAnother: "Screen another image",
     title: "Screen a retinal photograph",
     subtitle: "Upload one photograph of the back of the eye. Results take a few seconds.",
     upload: "Upload a fundus photograph",
@@ -120,6 +123,9 @@ export const en = {
   },
 
   quality: {
+    notFundusTitle: "This is not a retinal photograph",
+    notFundusWhy: "Only a photograph of the back of the eye (a fundus photograph) can be screened. This image does not look like one, so it was not graded.",
+    notFundusWhatToDo: "Upload a fundus photograph: a round, orange-red image of the retina on a dark background, taken with a fundus camera or a smartphone fundus adapter.",
     failTitle: "The photograph is not clear enough",
     whyTitle: "Why?",
     whyBody:
@@ -141,6 +147,9 @@ export const en = {
   },
 
   result: {
+    tabCare: "Recommended care",
+    tabMeaning: "What this means",
+    tabInsights: "AI insights",
     eyebrow: "Your screening result",
     title: "Your screening result",
     gradeWord: "Grade",
@@ -176,6 +185,8 @@ export const en = {
     clinicalOpen: "Show clinical details",
     clinicalClose: "Hide clinical details",
     confidence: "Confidence",
+    referralConfidence: "Referral confidence",
+    exactGradeConfidence: "exact grade",
     confidenceNote:
       "Confidence is how sure the system is about the grade it reported — not a probability that you have the disease.",
     calibrated: "calibrated",
@@ -233,15 +244,18 @@ export const en = {
     readyTitle: "Your screening report is ready",
     readyBody: "Your detailed CareBridge report has been generated successfully.",
     channelLabel: "WhatsApp delivery",
-    verifiedNumberIntro: "Send this report to your verified WhatsApp number:",
+    verifiedNumberIntro: "Send this report to your WhatsApp number:",
     send: "Send report on WhatsApp",
     sending: "Sending report…",
     sentShort: "Report sent to WhatsApp",
     queuedShort: "WhatsApp message queued for delivery",
     failedShort: "Unable to send the report",
     retry: "Try again",
-    explain: "Your PDF will be delivered to your registered WhatsApp number.",
-    registeredNote: "We use the number you signed in with. You never have to type it again.",
+    explain: "Your PDF will be delivered to the WhatsApp number on your account.",
+    registeredNote: "This is the WhatsApp number saved on your account.",
+    addNumberIntro: "Add your WhatsApp number to receive this report on your phone.",
+    saveNumber: "Save number",
+    invalidNumber: "Enter a 10-digit mobile number.",
     successTitle: "Report sent successfully",
     successBody: "Your screening report has been sent to:",
     successHint: "Open WhatsApp to view the PDF.",
@@ -264,6 +278,7 @@ export const en = {
       unreachable: "Could not reach the messaging service. Try again.",
       reportMissing: "This report is no longer available to send.",
       alreadySending: "This report is already being sent.",
+      noNumber: "Add your WhatsApp number first.",
       generic: "Unable to send the report on WhatsApp.",
     },
   },
@@ -273,6 +288,16 @@ export const en = {
   // Every sentence here talks about the SCREENING RESULT, never about the disease —
   // the same rule src/passport/comparison.py enforces on the backend.
   passport: {
+    overviewTitle: "Overview",
+    overviewSubtitle: "Your eye health at a glance.",
+    statTotal: "Total screenings",
+    statAttention: "Need attention",
+    statNormal: "Normal / mild",
+    statLast: "Last screening",
+    recentTitle: "Recent results",
+    newScreening: "New screening",
+    viewReport: "View report",
+    notGraded: "Not graded",
     eyebrow: "Eye Health Passport",
     title: "Your Eye Health Passport",
     subtitle: "Every screening you have had, and what changed between them.",
@@ -474,6 +499,7 @@ export const en = {
 
     distanceKm: "{km} km away",
     distanceM: "{metres} m away",
+    openFreeMap: "Find eye hospitals on the map",
     setupLabel: "Setup needed",
     distanceFromYou: "Distance from your location",
     distanceFromArea: "Distance from {area}",
@@ -566,6 +592,16 @@ export const en = {
     doctorAdded: "This patient's history is now available to you.",
     doctorNoPatients:
       "No patients have shared their record with you yet. Ask a patient to create a sharing code from their Eye Health Passport.",
+  },
+  shareWa: {
+    eyebrow: "Share",
+    title: "Send this report on WhatsApp",
+    body: "Share the PDF with yourself, a family member or your doctor.",
+    button: "Share to WhatsApp",
+    opening: "Opening…",
+    desktopNote: "On this device the PDF is downloaded and WhatsApp opens — attach the downloaded file to your chat.",
+    message: "My RETINEX eye screening report is attached (scan {ref}).",
+    failed: "Could not open sharing. Use “Download report” instead.",
   },
   why: {
     label: "Why am I seeing this?",

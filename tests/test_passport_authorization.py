@@ -27,7 +27,7 @@ from fastapi.testclient import TestClient
 from src.auth import config as auth_cfg
 from src.passport import service as passport_service
 from src.passport.routes import router as passport_router
-from tests.conftest import auth_header, signup
+from tests.conftest import auth_header, email_for, signup
 from tests.test_passport_longitudinal import analyze_result
 
 PATIENT = "+919812370001"
@@ -324,7 +324,7 @@ def test_only_an_administrator_can_assign_a_patient_to_a_doctor(api, auth_store,
     assert api.post("/v1/passport/access", json=body,
                     headers=auth_header(patient["token"])).status_code == 403
 
-    monkeypatch.setattr(auth_cfg, "ADMIN_MOBILES", (ADMIN,), raising=False)
+    monkeypatch.setattr(auth_cfg, "ADMIN_EMAILS", (email_for(ADMIN),), raising=False)
     admin = signup(api, ADMIN)
     assert admin["account"]["role"] == "admin"
 
@@ -338,7 +338,7 @@ def test_access_cannot_be_granted_to_an_account_that_is_not_a_verified_doctor(
         api, auth_store, monkeypatch, passport):
     patient = make_patient(api, passport, PATIENT)
     ordinary = signup(api, OTHER_PATIENT)
-    monkeypatch.setattr(auth_cfg, "ADMIN_MOBILES", (ADMIN,), raising=False)
+    monkeypatch.setattr(auth_cfg, "ADMIN_EMAILS", (email_for(ADMIN),), raising=False)
     admin = signup(api, ADMIN)
 
     r = api.post("/v1/passport/access",
@@ -354,7 +354,7 @@ def test_an_administrator_can_read_a_record_without_a_grant(api, auth_store, mon
     """An administrator assigns grants, so one who could not see a record could not
     assign it either."""
     patient = make_patient(api, passport, PATIENT)
-    monkeypatch.setattr(auth_cfg, "ADMIN_MOBILES", (ADMIN,), raising=False)
+    monkeypatch.setattr(auth_cfg, "ADMIN_EMAILS", (email_for(ADMIN),), raising=False)
     admin = signup(api, ADMIN)
     r = api.get(f"/v1/passport/patients/{patient['account_id']}",
                 headers=auth_header(admin["token"]))

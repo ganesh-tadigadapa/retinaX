@@ -25,7 +25,7 @@ import numpy as np
 
 from src.common.config import QualityCheck, quality_thresholds
 from src.common.imaging import (ben_graham, clahe_green, crop_to_retina,
-                                square_pad, apply_circular_mask)
+                                square_pad, apply_circular_mask, retina_mask)
 
 # What the health worker is told, per failed check. Ordered by severity: if several
 # fail we surface the most actionable one first.
@@ -48,6 +48,18 @@ RECAPTURE_MESSAGES = {
                                "retake. If it still looks soft, clean the lens."),
 }
 _SEVERITY_ORDER = ["field_of_view", "focus", "illumination"]
+
+NOT_FUNDUS_MESSAGE = ("This does not look like a retinal (fundus) photograph. Upload a "
+                      "photo of the back of the eye taken with a fundus camera or "
+                      "smartphone fundus adapter - a round, orange-red image on a dark "
+                      "background. Screenshots, documents and ordinary photos cannot be "
+                      "screened.")
+
+# Minimum share of the bright region whose colour is retina-red (R clearly above G and B).
+# Measured on the bundled APTOS samples: every real fundus 0.63-1.00 (the low end is the
+# deliberately mis-framed sample). Non-fundus images: screenshot 0.05, document 0.00,
+# noise 0.17, landscape 0.00, colour gradient 0.00, grey disc 0.00.
+FUNDUS_RED_FRACTION_MIN = 0.45
 
 
 # ------------------------------------------------------------------ measurements
@@ -119,6 +131,28 @@ def fov_score(mask: np.ndarray) -> tuple[float, float]:
     return frac, off
 
 
+def fundus_likeness(bgr: np.ndarray) -> float:
+    """Share of the illuminated region that is retina-red, 0-1.
+
+    Not a quality measure: a check that the image is a fundus photograph AT ALL. Without
+    it, a screenshot that happens to be sharp and evenly lit passes all three quality
+    checks and the grader - which has only ever seen retinas - returns a confident grade
+    for it. A colour test is crude, but every fundus photograph shares this one property
+    and most things people upload by mistake do not.
+    """
+    h, w = bgr.shape[:2]
+    s = 384 / max(h, w)
+    if s < 1:
+        bgr = cv2.resize(bgr, (max(1, int(w * s)), max(1, int(h * s))),
+                         interpolation=cv2.INTER_AREA)
+    mask = retina_mask(bgr)
+    if not mask.any():
+        return 0.0
+    b, g, r = (c.astype(np.float32) for c in cv2.split(bgr))
+    red = (r > g * 1.15) & (r > b * 1.3)
+    return float(red[mask].mean())
+
+
 # ------------------------------------------------------------------ enhancement
 def enhance(bgr: np.ndarray, mask: np.ndarray) -> np.ndarray:
     """Borderline-image rescue: Ben-Graham + CLAHE, re-masked."""
@@ -138,6 +172,9 @@ def assess(bgr: np.ndarray, thresholds: dict | None = None) -> dict:
     failures are not recoverable by any amount of processing, so we refuse immediately.
     """
     th = thresholds or quality_thresholds()
+
+    fundus = fundus_likeness(bgr)
+    is_fundus = fundus >= FUNDUS_RED_FRACTION_MIN
 
     cropped, mask = crop_to_retina(bgr)
     cropped, mask = square_pad(cropped, mask)
@@ -172,10 +209,12 @@ def assess(bgr: np.ndarray, thresholds: dict | None = None) -> dict:
         "illumination": QualityCheck(illum_ok, illum, th["illumination_grid_cv_max"], "grid_cv"),
         "field_of_view": QualityCheck(fov_ok, frac, th["fov_retina_fraction_min"], "retina_frac"),
     }
-    gradeable = all(c.passed for c in checks.values())
+    gradeable = is_fundus and all(c.passed for c in checks.values())
 
     instruction = None
-    if not gradeable:
+    if not is_fundus:
+        instruction = NOT_FUNDUS_MESSAGE
+    elif not gradeable:
         failed = {name for name, c in checks.items() if not c.passed}
         # Field of view is unrecoverable and unambiguous, so it always wins. Otherwise,
         # if focus and illumination failed together, uneven lighting is the more likely
@@ -195,6 +234,9 @@ def assess(bgr: np.ndarray, thresholds: dict | None = None) -> dict:
         "overall_score": round(_overall(checks, th), 4),
         "checks": {k: v.to_dict() for k, v in checks.items()},
         "enhanced": enhanced_applied or gradeable,
+        # False = the image is not a retinal photograph; nothing below it was graded.
+        "is_fundus": is_fundus,
+        "fundus_score": round(fundus, 4),
         "recapture_instruction": instruction,
         "threshold_source": th.get("_source"),
         "thresholds_fitted": bool(th.get("_fitted", False)),

@@ -1,6 +1,6 @@
 "use client";
 /**
- * 🔊 Listen — read a passage aloud in the chosen language.
+ * Listen — read a passage aloud in the chosen language.
  *
  * Uses the browser's own speech synthesis. Nothing is sent anywhere: the text is already
  * on the device, and a patient's result has no business travelling to a voice API to be
@@ -12,6 +12,7 @@
  * A device without a Telugu voice keeps the Telugu TEXT and says why it cannot speak it.
  * It never reads Telugu aloud in an English voice.
  */
+import { Square, Volume2, VolumeX } from "lucide-react";
 import { useId } from "react";
 import { useCareBridge } from "./CareBridgeProvider";
 
@@ -43,7 +44,7 @@ export default function SpeakButton({
   if (!usable) {
     return (
       <p className="cb-voicenote" role="note">
-        <span aria-hidden="true">🔇</span>{" "}
+        <span aria-hidden="true"><VolumeX className="ico" size={16} strokeWidth={1.75} /></span>{" "}
         {speech.supported
           ? t("errors.voiceNoLanguage", { language: meta.nativeName })
           : t("errors.voiceUnsupported")}
@@ -59,7 +60,7 @@ export default function SpeakButton({
       aria-pressed={speaking}
       onClick={() => (speaking ? stopSpeaking() : speak(key, parts))}
     >
-      <span aria-hidden="true">{speaking ? "⏹" : "🔊"}</span>
+      <span aria-hidden="true">{speaking ? <Square className="ico" size={16} strokeWidth={1.75} /> : <Volume2 className="ico" size={16} strokeWidth={1.75} />}</span>
       <span>{speaking ? t("common.stop") : (label ?? t("common.listen"))}</span>
       {speaking && <span className="cb-speakdots" aria-hidden="true" />}
     </button>

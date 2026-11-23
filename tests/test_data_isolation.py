@@ -25,7 +25,7 @@ import pytest
 
 from src.auth import service
 from tests.conftest import (SCAN_WITH_PII, auth_header, own_scan, share_with_doctor,
-                            signup)
+                            email_for, google_credential, signup)
 
 PATIENT_A = "+919800000001"
 PATIENT_B = "+919800000002"
@@ -356,36 +356,41 @@ def test_a_patient_cannot_promote_themselves_to_doctor(client, world, auth_store
     privilege, and every one of them is ignored.
     """
     for body in ({"role": "doctor"}, {"role": "admin"},
-                 {"doctor_verified": True}, {"can_read_reports": True}):
-        r = client.post("/v1/auth/sign-in",
-                        json={"mobile": PATIENT_A, "intent": "login", **body})
+                 {"doctor_verified": True}, {"can_read_reports": True},
+                 {"email": "someone.else@test.example"}):
+        r = client.post("/v1/auth/google",
+                        json={"credential": google_credential(PATIENT_A),
+                              "intent": "login", **body})
         # `role: admin` is refused by the schema; the rest sign in and change nothing.
         assert r.status_code in (200, 422), body
         if r.status_code == 200:
             assert r.json()["account"]["role"] == "user", body
             assert r.json()["account"]["can_read_reports"] is False, body
+            assert r.json()["account"]["email"] == email_for(PATIENT_A), body
 
-    assert auth_store.get_by_mobile(PATIENT_A).role == "user"
-    assert auth_store.get_by_mobile(PATIENT_A).doctor_verified is False
+    stored = auth_store.get_by_email(email_for(PATIENT_A))
+    assert stored.role == "user"
+    assert stored.doctor_verified is False
     assert client.get("/v1/reports", headers=world["ha"]).status_code == 403
 
 
 def test_signing_up_again_as_a_doctor_does_not_upgrade_an_existing_account(
         client, world, auth_store):
-    r = client.post("/v1/auth/sign-in",
-                    json={"mobile": PATIENT_A, "intent": "signup", "role": "doctor",
+    r = client.post("/v1/auth/google",
+                    json={"credential": google_credential(PATIENT_A),
+                          "intent": "signup", "role": "doctor",
                           "doctor_profile": {"doctor_name": "Not A Doctor",
                                              "registration_number": "FAKE-1",
                                              "hospital": "Nowhere"}})
-    # Sign-in SUCCEEDS now — anyone may open a session — but it hands back the account
-    # that already exists, with the role it already has. Replaying signup as a doctor is
-    # not a promotion path.
+    # Sign-in SUCCEEDS, but it hands back the account that already exists, with the role
+    # it already has. Replaying signup as a doctor is not a promotion path.
     assert r.status_code == 200
     assert r.json()["account"]["role"] == "user"
     assert r.json()["account"]["doctor_verified"] is False
-    assert auth_store.get_by_mobile(PATIENT_A).role == "user"
+    assert auth_store.get_by_email(email_for(PATIENT_A)).role == "user"
     # And it did not fork the person into a second record.
-    assert len([a for a in auth_store.list_accounts() if a.mobile == PATIENT_A]) == 1
+    assert len([a for a in auth_store.list_accounts()
+                if a.email == email_for(PATIENT_A)]) == 1
 
 
 def test_a_doctor_cannot_grant_themselves_access_through_the_admin_endpoint(client,
@@ -410,7 +415,7 @@ def test_a_new_doctor_account_is_never_verified_at_creation(client, auth_store):
 # ======================================================== ADMINISTRATOR PATH
 def test_an_administrator_can_assign_a_patient_to_a_doctor(client, auth_store, world,
                                                             monkeypatch):
-    monkeypatch.setattr("src.auth.config.ADMIN_MOBILES", (ADMIN,))
+    monkeypatch.setattr("src.auth.config.ADMIN_EMAILS", (email_for(ADMIN),))
     admin = signup(client, ADMIN, "user")
     assert admin["account"]["role"] == "admin"
     ha = auth_header(admin["token"])
@@ -425,7 +430,7 @@ def test_an_administrator_can_assign_a_patient_to_a_doctor(client, auth_store, w
 def test_a_patient_can_revoke_an_administrator_assignment(client, auth_store, world,
                                                            monkeypatch):
     """The patient's control is not weaker than the administrator's."""
-    monkeypatch.setattr("src.auth.config.ADMIN_MOBILES", (ADMIN,))
+    monkeypatch.setattr("src.auth.config.ADMIN_EMAILS", (email_for(ADMIN),))
     admin = signup(client, ADMIN, "user")
     client.post("/v1/passport/access",
                 json={"account_id": world["a_id"],

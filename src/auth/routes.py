@@ -1,8 +1,11 @@
 """HTTP surface for authentication. Thin: every decision lives in service.py.
 
-    POST /v1/auth/sign-in              open a session for a mobile number
+    GET  /v1/auth/config               public sign-in config (Google client ID)
+    POST /v1/auth/google               Sign in with Google (ID token -> session)
+    PUT  /v1/auth/me/whatsapp          set/clear the caller's WhatsApp delivery number
     POST /v1/auth/logout
     GET  /v1/auth/me
+    GET  /v1/auth/session
     GET  /v1/auth/admin/doctors        (admin)
     POST /v1/auth/admin/doctors/{id}/verify   (admin)
 """
@@ -14,28 +17,40 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from src.auth import config as cfg
+from src.auth import google as google_mod
 from src.auth import service
-from src.auth.models import Account, Role, SignInIn, mask_mobile
-from src.auth.security import (current_account, mint_token, optional_account,
-                               require_admin)
+from src.auth.models import Account, GoogleSignInIn, Role, WhatsAppNumberIn
+from src.auth.security import current_account, optional_account, require_admin
 from src.auth.storage import get_auth_store
 
 log = logging.getLogger("dr-auth.routes")
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
-# HTTP status for each refusal the service can return. The list is short because
-# sign-in has almost nothing left to refuse: there is no code to get wrong, no provider
-# to be down and no rate limit to trip.
+# HTTP status for each refusal sign-in can return.
 _STATUS = {
     "account_suspended": 403,
-    "invalid_mobile": 400,
+    "doctor_signup_required": 404,
+    "google_not_configured": 503,
+    "google_token_invalid": 401,
+    "google_email_unverified": 401,
+    "google_unavailable": 502,
 }
 
 
+def _refuse(code: str, message: str, **extra):
+    raise HTTPException(_STATUS.get(code, 400),
+                        detail={"error": {"code": code, "message": message, **extra}})
+
+
+@router.get("/config")
+def auth_config():
+    """What the sign-in page needs to draw the Google button. The client ID is public by
+    design (it is in every page that shows the button); no secret is returned."""
+    return {"providers": ["google"], "google_client_id": cfg.GOOGLE_CLIENT_ID or None}
+
+
 def _session_payload(out) -> dict:
-    """The body sign-in returns. Unchanged from the OTP era on purpose: every client,
-    guard and test downstream reads this shape."""
     acc = out.account
     return {
         "ok": True,
@@ -59,33 +74,40 @@ def _set_session_cookie(response: Response, token: str) -> None:
     )
 
 
-@router.post("/sign-in")
-def sign_in(body: SignInIn, response: Response):
-    """Open a session for a mobile number. No code, no password, no provider.
+@router.post("/google")
+def google_sign_in(body: GoogleSignInIn, response: Response):
+    """Exchange a Google ID token for an application session.
 
-    Returns exactly the shape the old /verify-otp returned, so nothing downstream of
-    sign-in changed: the session token, the role system, `Guard`, and every protected
-    endpoint are as they were.
-
-    The number is taken as claimed. See the module docstring in `service.py` for what
-    that does and does not guarantee.
+    The token is verified server-side (src/auth/google.py); the email and Google user id
+    come from it and from nowhere else. `role` and `doctor_profile` are requests that
+    only matter when a NEW account is created, and a doctor is always created pending.
     """
+    try:
+        identity = google_mod.verify_credential(body.credential)
+    except google_mod.GoogleAuthError as e:
+        _refuse(e.code, e.message)
     out = service.sign_in(
-        body.mobile,
+        identity,
         intent=body.intent,
         role=body.role,
         doctor_profile=body.doctor_profile.model_dump() if body.doctor_profile else None,
+        mobile=body.mobile,
     )
     if not out.ok:
-        raise HTTPException(
-            _STATUS.get(out.error, 400),
-            detail={"error": {"code": out.error, "message": out.message}},
-        )
+        _refuse(out.error, out.message)
     # Also set the token as an HttpOnly cookie. That is the safer transport for a
     # same-site deployment; the bearer token in the body is what makes the split
     # Vercel/Cloud Run origin work. See docs/AUTH.md.
     _set_session_cookie(response, out.token)
     return _session_payload(out)
+
+
+@router.put("/me/whatsapp")
+def set_whatsapp(body: WhatsAppNumberIn, account: Account = Depends(current_account)):
+    """Set or clear where THIS account's reports are sent on WhatsApp. Only ever the
+    caller's own record; there is no account id in the path or body."""
+    acc = service.set_whatsapp_number(account.account_id, body.mobile)
+    return {"ok": True, "account": (acc or account).to_public()}
 
 
 @router.post("/logout")
@@ -144,7 +166,10 @@ def list_doctors(admin: Account = Depends(require_admin)):
         "doctors": [
             {
                 "account_id": a.account_id,
-                "mobile_masked": mask_mobile(a.mobile),
+                # The admin has to know WHO is asking to be a doctor; the Google email is
+                # that identity. The WhatsApp number is not shown.
+                "email": a.email,
+                "name": a.name,
                 "doctor_verified": a.doctor_verified,
                 "created_at": a.created_at,
                 "profile": a.doctor_profile,

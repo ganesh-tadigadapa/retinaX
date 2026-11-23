@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import PageHeader from "@/components/PageHeader";
 
 const CANNOT_SEE = [
   { h: "Neovascularisation", p: "New vessel growth is what defines proliferative disease — ICDR grade 4, the most sight-threatening grade. We have no detector for it.", c: "The rule engine can never confirm grade 4. It returns unknown and escalates, rather than reporting no disease." },
@@ -16,14 +17,11 @@ const NOT_BUILT = [
 export default function Limitations() {
   return (
     <Shell>
-      <section className="hero" style={{ paddingBlock: "26px 24px" }}>
-        <h2>Limitations</h2>
-        <p className="lede">
-          Published before anyone asks. Naming your own gaps is what buys credibility for
-          the numbers that <strong>are</strong> here — and a system that hides what it
-          cannot see is more dangerous than one that admits it.
-        </p>
-      </section>
+      <PageHeader eyebrow="Learn" title="Limitations">
+        Published before anyone asks. Naming your own gaps is what buys credibility for
+        the numbers that <strong>are</strong> here — and a system that hides what it
+        cannot see is more dangerous than one that admits it.
+      </PageHeader>
 
       <section className="band">
         <h3>What the lesion detectors cannot see</h3>

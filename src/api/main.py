@@ -133,7 +133,7 @@ def _startup():
              time.perf_counter() - t)
     log.info("auth env=%s protect_analyze=%s",
              auth_config.AUTH_ENV, auth_config.PROTECT_ANALYZE)
-    log.info("sign-in: no verification (any mobile number opens a session)")
+    log.info("sign-in: google configured=%s", auth_config.google_enabled())
     # Says whether a report could be delivered, and why not when it could not. Names
     # missing variables, never their values.
     wa = delivery_config.status()
@@ -169,14 +169,11 @@ def health():
         "synthetic_demo_model": bool(PREDICTOR and PREDICTOR.synthetic),
         "store": STORE.backend if STORE else None,
         "auth": {
-            # A session is still required for the protected endpoints; what changed is
-            # how easy it is to get one.
             "required": auth_config.PROTECT_ANALYZE,
             "env": auth_config.AUTH_ENV,
-            # Stated plainly so nobody reads this deployment as verified.
-            "verification": "none",
-            "note": ("Sign-in accepts any mobile number without verification. "
-                     "The number is a claim, not a proof."),
+            # Identity is a Google ID token verified server-side.
+            "verification": "google",
+            "google_configured": auth_config.google_enabled(),
         },
         # Whether the optional WhatsApp delivery channel would work. No credential, no
         # sender number and no URL appears in this block — see delivery/config.status().

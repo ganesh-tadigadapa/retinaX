@@ -158,7 +158,9 @@ describe("explanation level", () => {
   it("clinical mode shows the ICDR label, confidence and the Grad-CAM method", () => {
     render(<Wrap><CareResult r={makeResult()} /></Wrap>);
     fireEvent.click(screen.getAllByRole("radio", { name: en.common.clinical })[0]);
-    expect(screen.getByText(/ICDR · Moderate NPDR · 77% Confidence \(calibrated\)/)).toBeTruthy();
+    // Referral confidence leads (referable, P=0.81); the exact-grade figure follows.
+    expect(screen.getByText(/ICDR · Moderate NPDR · 81% Referral confidence \(calibrated\)/)).toBeTruthy();
+    expect(screen.getByText(/exact grade: 77%/)).toBeTruthy();
     expect(screen.getByText(en.explainability.gradCamTech)).toBeTruthy();
     // The plain explanation does not disappear when a clinician is reading.
     expect(screen.getByText(en.result.meaning[2])).toBeTruthy();
@@ -413,9 +415,10 @@ describe("the existing application is untouched", () => {
     await act(async () => { await Promise.resolve(); });
 
     const calls = fetchSpy.mock.calls as unknown as [string, RequestInit?][];
-    // The capability probe, and nothing else. It is a GET and it has no body.
+    // The capability probes (care finder status, and /health for whether WhatsApp
+    // sending is configured), and nothing else. GETs with no body.
     for (const [url, init] of calls) {
-      expect(String(url)).toContain("/v1/care-finder/status");
+      expect(String(url)).toMatch(/\/v1\/care-finder\/status|\/health$/);
       expect(init?.method ?? "GET").toBe("GET");
       expect(init?.body).toBeUndefined();
     }

@@ -48,6 +48,8 @@ const ERROR_KEYS: Record<string, StringKey> = {
   invalid_recipient: "whatsapp.errors.invalidRecipient",
   recipient_opted_out: "whatsapp.errors.optedOut",
   rate_limited: "whatsapp.errors.rateLimited",
+  // Sign-in is Google; a WhatsApp number is optional and may not be set yet.
+  no_whatsapp_number: "whatsapp.errors.noNumber",
   media_unreachable: "whatsapp.errors.mediaUnreachable",
   provider_unreachable: "whatsapp.errors.unreachable",
   report_not_ready: "whatsapp.errors.reportMissing",

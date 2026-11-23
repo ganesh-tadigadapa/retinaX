@@ -1,6 +1,6 @@
 "use client";
 /**
- * 📍 Smart Care Finder — "from screening to the next step of care".
+ * Smart Care Finder — "from screening to the next step of care".
  *
  * READ THIS BEFORE EDITING. This component performs no analysis and displays no clinical
  * value. It reads exactly two things off the screening result, and both are PRESENTATION
@@ -25,6 +25,8 @@
  * setter, so they cannot drift apart. The list is always usable on its own — see
  * CareFinderMap for why that is a hard rule rather than a nicety.
  */
+import Link from "next/link";
+import { Clock, Globe, List, Lock, Map as MapIcon, MapPin, Navigation, Phone, Ruler, Star, TriangleAlert, Wrench } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AnalyzeResult } from "@/lib/api";
 import {
@@ -140,12 +142,12 @@ function FacilityDetails({
     <div className={`cf-details${compact ? " compact" : ""}`}>
       {f.address && (
         <p className="cf-detailrow">
-          <span className="cf-detailicon" aria-hidden="true">📍</span>
+          <span className="cf-detailicon" aria-hidden="true"><MapPin className="ico" size={16} strokeWidth={1.75} /></span>
           <span>{f.address}</span>
         </p>
       )}
       <p className="cf-detailrow">
-        <span className="cf-detailicon" aria-hidden="true">📏</span>
+        <span className="cf-detailicon" aria-hidden="true"><Ruler className="ico" size={16} strokeWidth={1.75} /></span>
         <span>
           {/* WHERE FROM is part of the fact. After a city search the origin is a place
               the patient typed, not the phone in their hand, and "1.2 km away" without
@@ -159,7 +161,7 @@ function FacilityDetails({
       </p>
       {typeof f.rating === "number" && (
         <p className="cf-detailrow">
-          <span className="cf-detailicon" aria-hidden="true">⭐</span>
+          <span className="cf-detailicon" aria-hidden="true"><Star className="ico" size={16} strokeWidth={1.75} /></span>
           <span>
             {t("careFinder.rating", { rating: f.rating.toFixed(1) })}
             {typeof f.review_count === "number" && (
@@ -169,7 +171,7 @@ function FacilityDetails({
         </p>
       )}
       <p className="cf-detailrow">
-        <span className="cf-detailicon" aria-hidden="true">🕐</span>
+        <span className="cf-detailicon" aria-hidden="true"><Clock className="ico" size={16} strokeWidth={1.75} /></span>
         {/* Never colour alone: the word is always written out. */}
         <span className={f.open_now === true ? "cf-open" : f.open_now === false ? "cf-shut" : ""}>
           {f.open_now === true ? t("careFinder.openNow")
@@ -179,7 +181,7 @@ function FacilityDetails({
       </p>
       {f.phone && (
         <p className="cf-detailrow">
-          <span className="cf-detailicon" aria-hidden="true">☎️</span>
+          <span className="cf-detailicon" aria-hidden="true"><Phone className="ico" size={16} strokeWidth={1.75} /></span>
           <span>
             <span className="cf-detaillabel">{t("careFinder.phone")}: </span>
             <a href={telHref(f.phone)}>{f.phone}</a>
@@ -188,7 +190,7 @@ function FacilityDetails({
       )}
       {f.website && (
         <p className="cf-detailrow">
-          <span className="cf-detailicon" aria-hidden="true">🌐</span>
+          <span className="cf-detailicon" aria-hidden="true"><Globe className="ico" size={16} strokeWidth={1.75} /></span>
           <span>
             <span className="cf-detaillabel">{t("careFinder.website")}: </span>
             {/* The host, not the word "Website" twice — a person deciding whether to
@@ -205,7 +207,7 @@ function FacilityDetails({
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span aria-hidden="true">🧭</span> {t("careFinder.directions")}
+        <span aria-hidden="true"><Navigation className="ico" size={16} strokeWidth={1.75} /></span> {t("careFinder.directions")}
       </a>
       <p className="cb-note cf-approx">{t("careFinder.approx")} {t("careFinder.directionsHint")}</p>
     </div>
@@ -239,7 +241,7 @@ function FacilityCard({
           <span className="cf-cardmeta">
             {distanceText(f.distance_meters)}
             {typeof f.rating === "number" && (
-              <> · <span aria-hidden="true">⭐</span> {f.rating.toFixed(1)}</>
+              <> · <span aria-hidden="true"><Star className="ico" size={16} strokeWidth={1.75} /></span> {f.rating.toFixed(1)}</>
             )}
             {f.open_now === true && <> · <span className="cf-open">{t("careFinder.openNow")}</span></>}
             {f.open_now === false && <> · <span className="cf-shut">{t("careFinder.closed")}</span></>}
@@ -399,12 +401,12 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
       className={`cb-section cf${prominent ? " prominent" : ""}`}
       aria-labelledby="cf-h"
     >
-      <div className="eyebrow"><span aria-hidden="true">🧭</span> {t("careFinder.eyebrow")}</div>
+      <div className="eyebrow"><span aria-hidden="true"><Navigation className="ico" size={16} strokeWidth={1.75} /></span> {t("careFinder.eyebrow")}</div>
       <h3 id="cf-h" className="cb-h">{t("careFinder.continueTitle")}</h3>
       <p className="cb-lede">{t("careFinder.continueBody")}</p>
 
       <div className="cf-head">
-        <span className="cf-headicon" aria-hidden="true">📍</span>
+        <span className="cf-headicon" aria-hidden="true"><MapPin className="ico" size={16} strokeWidth={1.75} /></span>
         <div className="cf-headtext">
           <h4>{t("careFinder.title")}</h4>
           {/* Result-aware wording. It never restates the grade — that is above. */}
@@ -419,10 +421,17 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
       {phase !== "results" && unavailable && (
         <div className="cf-unavailable" role="note">
           <p className="cf-unavailablemsg">
-            <span aria-hidden="true">🛠</span> {t("careFinder.errors.notSetUp")}
+            <span aria-hidden="true"><Wrench className="ico" size={16} strokeWidth={1.75} /></span> {t("careFinder.errors.notSetUp")}
           </p>
           <p className="cb-note">{t("careFinder.errors.notSetUpHint")}</p>
-          {status?.reason && (
+          {/* The /hospitals page searches OpenStreetMap and needs no key, so there is
+              always a working way to find eye care from here. */}
+          <Link href="/hospitals" className="cf-cta" style={{ display: "inline-flex", marginTop: 10 }}>
+            <MapPin className="ico" size={16} strokeWidth={1.75} aria-hidden="true" /> {t("careFinder.openFreeMap")}
+          </Link>
+          {/* The missing-variable name is for whoever runs the service, not for patients:
+              shown while developing, hidden in a production build. */}
+          {status?.reason && process.env.NODE_ENV !== "production" && (
             <p className="cf-setup mono">
               <span className="cf-setuptag">{t("careFinder.setupLabel")}</span>
               {status.reason}
@@ -448,7 +457,7 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
             ) : phase === "error" && !configProblem ? (
               <><span aria-hidden="true">↻</span> {t("careFinder.retry")}</>
             ) : (
-              <><span aria-hidden="true">📍</span> {t("careFinder.find")}</>
+              <><span aria-hidden="true"><MapPin className="ico" size={16} strokeWidth={1.75} /></span> {t("careFinder.find")}</>
             )}
           </button>
 
@@ -465,7 +474,7 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
         {phase === "searching" && t("careFinder.searching")}
         {phase === "error" && (
           <span className="cf-error">
-            <span aria-hidden="true">⚠</span> {t(errorKey(code))}
+            <span aria-hidden="true"><TriangleAlert className="ico" size={16} strokeWidth={1.75} /></span> {t(errorKey(code))}
             {hintKey && <> {t(hintKey)}</>}
             {/* The exact cause, for whoever has to fix it. A patient cannot act on
                 "api_disabled", but nobody can act on silence. */}
@@ -474,7 +483,7 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
         )}
         {phase === "idle" && (
           <span className="cf-privacy">
-            <span aria-hidden="true">🔒</span> {t("careFinder.privacyNote")}
+            <span aria-hidden="true"><Lock className="ico" size={16} strokeWidth={1.75} /></span> {t("careFinder.privacyNote")}
           </span>
         )}
         {phase === "results" && (
@@ -540,7 +549,7 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
                   className={`cf-viewtab${view === v ? " on" : ""}`}
                   onClick={() => setView(v)}
                 >
-                  <span aria-hidden="true">{v === "map" ? "🗺️" : "📋"}</span>{" "}
+                  <span aria-hidden="true">{v === "map" ? <MapIcon className="ico" size={16} strokeWidth={1.75} /> : <List className="ico" size={16} strokeWidth={1.75} />}</span>{" "}
                   {t(v === "map" ? "careFinder.view.map" : "careFinder.view.list")}
                 </button>
               ))}
@@ -641,7 +650,7 @@ export default function CareFinder({ r }: { r: AnalyzeResult }) {
           button before a location is asked for, and here once results are showing. */}
       <p className="cb-note cf-foot">
         {phase === "results" && (
-          <><span aria-hidden="true">🔒</span> {t("careFinder.privacyNote")}{" "}</>
+          <><span aria-hidden="true"><Lock className="ico" size={16} strokeWidth={1.75} /></span> {t("careFinder.privacyNote")}{" "}</>
         )}
         {t("careFinder.notEndorsement")}
       </p>

@@ -4,11 +4,12 @@ Same shape as `src/api/store.py` (local JSON, process-lock, swappable), but a SE
 set of files on purpose: account data and medical scan data must not live in the same
 record or the same document. Nothing in this module ever touches a retinal image.
 
-What is stored per account: id, mobile, role, created timestamp, doctor_verified,
-status, and — for doctors only — the claimed verification details.
+What is stored per account: id, Google user id, email, display name, picture URL, an
+optional WhatsApp number, role, created timestamp, doctor_verified, status, and — for
+doctors only — the claimed verification details.
 
-There is no password field and no OTP-challenge file, because there is neither. Sign-in
-is possession of a mobile number as CLAIMED, not as proved — see `src/auth/README.md`.
+There is no password field, because there is no password: identity is a verified Google
+ID token (src/auth/google.py).
 """
 from __future__ import annotations
 
@@ -68,9 +69,16 @@ class LocalAuthStore:
         self.dir = d
 
     # ------------------------------------------------------------- accounts
-    def get_by_mobile(self, mobile: str) -> Account | None:
+    def get_by_google_sub(self, sub: str) -> Account | None:
         for rec in self._accounts.read():
-            if rec.get("mobile") == mobile:
+            if sub and rec.get("google_sub") == sub:
+                return Account.from_record(rec)
+        return None
+
+    def get_by_email(self, email: str) -> Account | None:
+        email = (email or "").strip().lower()
+        for rec in self._accounts.read():
+            if email and (rec.get("email") or "").lower() == email:
                 return Account.from_record(rec)
         return None
 
@@ -80,27 +88,32 @@ class LocalAuthStore:
                 return Account.from_record(rec)
         return None
 
-    def create(self, mobile: str, role: str,
+    def create(self, *, google_sub: str, email: str, role: str, name: str = "",
+               picture: str = "", mobile: str | None = None,
                doctor_profile: dict | None = None) -> Account:
         """Creates an account. A doctor is ALWAYS created unverified.
 
         The `role` argument comes, ultimately, from a signup form — which is why the one
         thing it cannot do is set doctor_verified. Admin is not reachable from a form at
-        all: it comes from the ADMIN_MOBILES allow-list held in the environment.
+        all: it comes from the ADMIN_EMAILS allow-list held in the environment.
         """
+        email = (email or "").strip().lower()
         with _LOCK:
-            existing = self.get_by_mobile(mobile)
+            existing = self.get_by_google_sub(google_sub)
             if existing:
-                # The duplicate-account guard, and it is why signup cannot fork a person
-                # into two records: one verified mobile is one account, whichever flow
-                # arrives.
+                # The duplicate-account guard: one Google account is one record,
+                # whichever flow arrives.
                 return existing
-            if mobile in cfg.ADMIN_MOBILES:
+            if email in cfg.ADMIN_EMAILS:
                 role = Role.ADMIN.value
             elif role not in (Role.USER.value, Role.DOCTOR.value):
                 role = Role.USER.value
             acc = Account(
                 account_id="acc_" + uuid.uuid4().hex[:16],
+                google_sub=google_sub,
+                email=email,
+                name=name,
+                picture=picture,
                 mobile=mobile,
                 role=role,
                 doctor_verified=False,          # never true at creation, for any role
@@ -112,6 +125,15 @@ class LocalAuthStore:
             rows.append(acc.to_record())
             self._accounts.write(rows)
             return acc
+
+    def delete(self, account_id: str) -> bool:
+        with _LOCK:
+            rows = self._accounts.read()
+            kept = [r for r in rows if r.get("account_id") != account_id]
+            if len(kept) == len(rows):
+                return False
+            self._accounts.write(kept)
+            return True
 
     def update(self, account_id: str, **changes) -> Account | None:
         with _LOCK:

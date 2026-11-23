@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Guard from "@/components/Guard";
 import Shell from "@/components/Shell";
+import PageHeader from "@/components/PageHeader";
 import { getScans, ICDR_LABELS, submitReview } from "@/lib/api";
 
 type Scan = {
@@ -53,6 +54,10 @@ export default function Review() {
   return (
     <Guard>
     <Shell>
+      <PageHeader eyebrow="Clinical" title="Clinician review">
+        Confirm or correct the model&rsquo;s grade, one scan at a time. Your decision and
+        the time it took are stored with the scan.
+      </PageHeader>
       {err && <div className="err" style={{ marginBottom: 14 }}>{err}</div>}
       {!cur ? (
         <div className="card">

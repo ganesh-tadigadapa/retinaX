@@ -9,6 +9,7 @@
  * `LanguageChoices` is the list on its own, reused by the onboarding card and by the
  * CareBridge page.
  */
+import { Globe, Volume2 } from "lucide-react";
 import { LANGUAGES } from "@/lib/i18n";
 import { useCareBridge } from "./CareBridgeProvider";
 
@@ -52,7 +53,7 @@ export default function LanguageOnboarding({ compact = false }: { compact?: bool
     <section className={`cb-welcome${compact ? " compact" : ""}`} aria-labelledby="cb-welcome-h">
       <div className="cb-welcomeinner">
         <div className="eyebrow">
-          <span aria-hidden="true">🌍</span> {t("onboarding.eyebrow")}
+          <span aria-hidden="true"><Globe className="ico" size={16} strokeWidth={1.75} /></span> {t("onboarding.eyebrow")}
         </div>
         <h2 id="cb-welcome-h">{t("onboarding.title")}</h2>
         <p className="cb-welcomesub">{t("onboarding.subtitle")}</p>
@@ -61,7 +62,7 @@ export default function LanguageOnboarding({ compact = false }: { compact?: bool
 
         <div className="cb-welcomefoot">
           <span className="cb-voiceflag">
-            <span aria-hidden="true">🔊</span> {t("onboarding.voiceNote")}
+            <span aria-hidden="true"><Volume2 className="ico" size={16} strokeWidth={1.75} /></span> {t("onboarding.voiceNote")}
           </span>
           <span className="cb-welcomehint">{t("onboarding.changeLater")}</span>
           <button type="button" className="linkbtn" onClick={keepDefaultLanguage}>
