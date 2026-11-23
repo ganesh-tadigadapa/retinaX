@@ -1,0 +1,16 @@
+{$SITE_HOST} {
+	encode gzip
+	# AI API straight to the api container: no Next.js proxy (and its 30 s timeout) in
+	# between, because a screening on a small CPU can take longer than that.
+	handle_path /backend/* {
+		reverse_proxy api:7860 {
+			transport http {
+				read_timeout 180s
+				write_timeout 180s
+			}
+		}
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

@@ -258,6 +258,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <Link href="/how-it-works">{t("nav.howItWorks")}</Link>
             <Link href="/limitations">{t("nav.limitations")}</Link>
             <Link href="/dashboard">{t("nav.evidence")}</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
           </span>
         </footer>
       </div>

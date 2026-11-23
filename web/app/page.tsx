@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import Shell from "@/components/Shell";
 import LanguageOnboarding from "@/components/carebridge/LanguagePicker";
 import HomeExplorer from "@/components/HomeExplorer";
-import HeroEye from "@/components/HeroEye";
+import HeroScan from "@/components/HeroScan";
 import BentoGrid from "@/components/BentoGrid";
 
 /** Drop a photo at public/hero-eye.(jpg|png|webp) and the hero uses it. */
@@ -47,9 +47,8 @@ export default function Home() {
           {photo ? (
             <img src={photo} alt="" className="rx-hero-photo" />
           ) : (
-            <HeroEye />
+            <HeroScan />
           )}
-          <span className="rx-script">Clearer Vision<br />Healthier Lives</span>
         </div>
       </section>
 

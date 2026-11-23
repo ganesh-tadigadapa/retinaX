@@ -1,0 +1,31 @@
+# RetinaX on one server: AI API + website + Caddy (automatic HTTPS).
+#   SITE_HOST and GOOGLE_CLIENT_ID come from ./.env ; API secrets from ./api.env
+services:
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: api.env
+    volumes:
+      - apidata:/app/data
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    restart: unless-stopped
+    depends_on: [api]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_HOST: ${SITE_HOST}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+volumes:
+  apidata:
+  caddy_data:
+  caddy_config:
